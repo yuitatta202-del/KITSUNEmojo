@@ -106,8 +106,8 @@ export class SupabaseService implements OnModuleInit {
 
   constructor(private configService: ConfigService) {
     const supabaseUrl = this.configService.get<string>('SUPABASE_URL') || '';
-    const serviceRoleKey = this.configService.get<string>('SUPABASE_KEY') || '';
-
+    const serviceRoleKey =
+      this.configService.get<string>('SUPABASE_SERVICE_ROLE_KEY') || '';
     if (!supabaseUrl || !serviceRoleKey) {
       throw new Error('SUPABASE_URL and SUPABASE_KEY must be defined');
     }
