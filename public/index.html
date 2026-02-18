@@ -551,9 +551,25 @@
       let updateInterval = null;
       let realtimeInterval = null;
 
-      const PROXY_URL = 'http://localhost:3000/admin/proxy?url=';
-      const API_URL = 'http://localhost:3000/admin';
-      const TRACK_API = 'http://localhost:3000/api';
+// ============================================
+// CONFIGURAZIONE - Versione produzione
+// ============================================
+
+// Determina l'URL base in base all'ambiente
+const BASE_URL = window.location.hostname === 'localhost' 
+  ? 'http://localhost:3000' 
+  : 'https://kitsun-emojo.vercel.app';  // ← SOSTITUISCI CON IL TUO URL RENDER
+
+const PROXY_URL = `${BASE_URL}/admin/proxy?url=`;
+const API_URL = `${BASE_URL}/admin`;
+const TRACK_API = `${BASE_URL}/api`;
+
+// Log per debug (puoi rimuoverli in produzione)
+console.log('🌐 Environment:', window.location.hostname === 'localhost' ? 'development' : 'production');
+console.log('🌐 BASE_URL:', BASE_URL);
+console.log('🌐 API_URL:', API_URL);
+console.log('🌐 TRACK_API:', TRACK_API);
+console.log('🌐 PROXY_URL:', PROXY_URL);
 
       // ============================================
       // TRACKING FUNCTIONS

@@ -320,13 +320,28 @@
         </div>
       </div>
     </div>
+<script>
+ // ============================================
+  // CONFIGURAZIONE - Versione produzione
+  // ============================================
+  
+  // Determina l'URL base in base all'ambiente
+  const BASE_URL = window.location.hostname === 'localhost' 
+    ? 'http://localhost:3000' 
+  : 'https://kitsune-backend.onrender.com';  // ← ORA È CORRETTO!
 
-    <script>
-  const API_URL = 'http://localhost:3000';
-  const BASE_ADMIN_URL = `${API_URL}/admin`;
-  const PROXY_URL = `${API_URL}/admin/proxy?url=`;
+  const API_URL = BASE_URL;
+  const BASE_ADMIN_URL = `${BASE_URL}/admin`;
+  const PROXY_URL = `${BASE_URL}/admin/proxy?url=`;
   const AUTHORIZED_ADMINS = ['0x2aab3b9458cbb3709c6a131b1d9a7a0eb111efbc'.toLowerCase()];
   const STORAGE_KEY = 'kitsune_wallet_session';
+
+  // Log per debug
+  console.log('🌐 Environment:', window.location.hostname === 'localhost' ? 'development' : 'production');
+  console.log('🌐 BASE_URL:', BASE_URL);
+  console.log('🌐 API_URL:', API_URL);
+  console.log('🌐 BASE_ADMIN_URL:', BASE_ADMIN_URL);
+  console.log('🌐 PROXY_URL:', PROXY_URL);
 
   let userWallet = null;
   let allManga = [];

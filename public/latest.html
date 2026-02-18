@@ -271,11 +271,29 @@
         © 2026 KitsuneMojo • <span id="live-update-time"></span>
       </p>
     </footer>
-
-    <script>
-      const ADMIN_API = 'http://localhost:3000/admin';
-      const API_URL = 'http://localhost:3000/api';
-      const PROXY_URL = 'http://localhost:3000/admin/proxy?url=';
+<script>
+  // ============================================
+  // CONFIGURAZIONE - Versione produzione
+  // ============================================
+  
+  // Determina l'URL base in base all'ambiente
+  const BASE_URL = window.location.hostname === 'localhost' 
+    ? 'http://localhost:3000' 
+    : 'https://kitsun-emojo.vercel.app';  // ← SOSTITUISCI CON IL TUO URL RENDER
+  
+  const ADMIN_API = `${BASE_URL}/admin`;
+  const API_URL = `${BASE_URL}/api`;
+  const PROXY_URL = `${BASE_URL}/admin/proxy?url=`;
+  
+  // Log per debug (puoi rimuoverli in produzione)
+  console.log('🌐 Environment:', window.location.hostname === 'localhost' ? 'development' : 'production');
+  console.log('🌐 BASE_URL:', BASE_URL);
+  console.log('🌐 ADMIN_API:', ADMIN_API);
+  console.log('🌐 API_URL:', API_URL);
+  
+  // ============================================
+  // RESTO DEL CODICE (invariato)
+  // ============================================
       
       let allManga = [];
       let filteredManga = [];

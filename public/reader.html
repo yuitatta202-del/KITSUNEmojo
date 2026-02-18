@@ -416,13 +416,25 @@
 
     <script>
         // ============================================
-        // CONFIGURAZIONE
-        // ============================================
-        const PROXY_URL = 'http://localhost:3000/admin/proxy?url=';
-        const API_URL = 'http://localhost:3000/admin';
-        const READER_API = 'http://localhost:3000/reader';
-        const params = new URLSearchParams(window.location.search);
-        const mangaId = params.get('id');
+// CONFIGURAZIONE - Versione produzione
+// ============================================
+
+// Determina l'URL base in base all'ambiente
+const BASE_URL = window.location.hostname === 'localhost' 
+  ? 'http://localhost:3000' 
+  : 'https://kitsun-emojo.vercel.app';  // ← IL TUO URL RENDER (cambialo con quello che avrai)
+
+const PROXY_URL = `${BASE_URL}/admin/proxy?url=`;
+const API_URL = `${BASE_URL}/admin`;
+const READER_API = `${BASE_URL}/reader`;
+
+const params = new URLSearchParams(window.location.search);
+const mangaId = params.get('id');
+
+// Log per debug (rimuovere in produzione)
+console.log('🔧 Environment:', window.location.hostname === 'localhost' ? 'development' : 'production');
+console.log('🔧 BASE_URL:', BASE_URL);
+console.log('🔧 mangaId:', mangaId);
 
         // ============================================
         // STATO GLOBALE

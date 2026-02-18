@@ -131,9 +131,23 @@
         </div>
     </main>
 
-    <script>
-        const API_URL = 'http://localhost:3000/admin/bulk/ingest';
-        const AUTHORIZED_ADMINS = ['0x2aab3b9458cbb3709c6a131b1d9a7a0eb111efbc'.toLowerCase()];
+   <script>
+    // ============================================
+    // CONFIGURAZIONE - Versione produzione
+    // ============================================
+    
+    // Determina l'URL base in base all'ambiente
+    const BASE_URL = window.location.hostname === 'localhost' 
+        ? 'http://localhost:3000'
+        : 'https://kitsun-emojo.vercel.app';  // ← SOSTITUISCI CON IL TUO URL RENDER
+    
+    const API_URL = `${BASE_URL}/admin/bulk/ingest`;
+    const AUTHORIZED_ADMINS = ['0x2aab3b9458cbb3709c6a131b1d9a7a0eb111efbc'.toLowerCase()];
+    
+    // Log per debug
+    console.log('🌐 Environment:', window.location.hostname === 'localhost' ? 'development' : 'production');
+    console.log('🌐 BASE_URL:', BASE_URL);
+    console.log('🌐 API_URL:', API_URL);
         
         let isRunning = false;
         let userWallet = null;
