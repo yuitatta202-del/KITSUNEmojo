@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Kitsune Mojo | Privacy Protocol</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+    />
+    <style>
+      body {
+        background-color: #050505;
+        color: #e2e8f0;
+        line-height: 1.6;
+      }
+      .glass-nav {
+        background: rgba(10, 10, 10, 0.8);
+        backdrop-filter: blur(12px);
+        border-bottom: 1px solid #1f2937;
+      }
+      .policy-container {
+        background: rgba(15, 15, 15, 0.5);
+        border: 1px solid #1f2937;
+      }
+      .orange-glow {
+        color: #f6851b;
+        text-shadow: 0 0 10px rgba(246, 133, 27, 0.3);
+      }
+
+      ::-webkit-scrollbar {
+        width: 8px;
+      }
+      ::-webkit-scrollbar-track {
+        background: #050505;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #f6851b;
+        border-radius: 10px;
+      }
+    </style>
+  </head>
+  <body class="font-sans">
+    <nav class="glass-nav sticky top-0 z-50 px-6 py-4">
+      <div class="max-w-7xl mx-auto flex justify-between items-center">
+        <div
+          class="flex items-center gap-2 cursor-pointer"
+          onclick="window.location.href = 'index.html'"
+        >
+          <i class="fas fa-fox text-orange-500 text-2xl"></i>
+          <span class="text-xl font-black tracking-tighter uppercase"
+            >Kitsune<span class="text-orange-500">Mojo</span></span
+          >
+        </div>
+        <a
+          href="index.html"
+          class="text-xs font-bold text-gray-400 hover:text-orange-500 transition uppercase tracking-widest"
+        >
+          <i class="fas fa-arrow-left mr-2"></i> Back to Vault
+        </a>
+      </div>
+    </nav>
+
+    <main class="max-w-4xl mx-auto px-6 py-20">
+      <header class="mb-16">
+        <h1
+          class="text-4xl md:text-5xl font-black uppercase tracking-tighter mb-4"
+        >
+          Privacy <span class="text-orange-500">Protocol</span>
+        </h1>
+        <p class="text-gray-500 italic">
+          Last encryption update: February 2026
+        </p>
+      </header>
+
+      <div class="policy-container rounded-3xl p-8 md:p-12 space-y-10">
+        <section>
+          <h2
+            class="text-xl font-bold uppercase tracking-widest orange-glow mb-4"
+          >
+            1. Data Handling
+          </h2>
+          <p class="text-gray-400">
+            KitsuneMojo operates as a decentralized viewing interface. We do not
+            require account registration for standard browsing. Collected data
+            is strictly limited to technical requirements for service stability.
+          </p>
+        </section>
+
+        <section>
+          <h2
+            class="text-xl font-bold uppercase tracking-widest orange-glow mb-4"
+          >
+            2. Cookies & Tracking
+          </h2>
+          <p class="text-gray-400">
+            We only use essential technical cookies to store your reading
+            preferences (e.g., last page read) and administrative sessions. No
+            third-party trackers are used for advertising or commercial
+            profiling.
+          </p>
+        </section>
+
+        <section>
+          <h2
+            class="text-xl font-bold uppercase tracking-widest orange-glow mb-4"
+          >
+            3. System Logs
+          </h2>
+          <p class="text-gray-400">
+            To ensure the security of the
+            <span class="text-orange-500 font-mono">Mojo Protocol</span>, our
+            servers may temporarily log IP addresses to prevent DoS attacks or
+            unauthorized access attempts to the admin dashboard.
+          </p>
+        </section>
+
+        <section>
+          <h2
+            class="text-xl font-bold uppercase tracking-widest orange-glow mb-4"
+          >
+            4. External Nodes
+          </h2>
+          <p class="text-gray-400">
+            Our service may contain links to external resources or utilize
+            proxies for image rendering. We are not responsible for the privacy
+            practices or content of these third-party nodes.
+          </p>
+        </section>
+
+        <section class="border-t border-gray-800 pt-10">
+          <h2
+            class="text-xl font-bold uppercase tracking-widest orange-glow mb-4"
+          >
+            5. DMCA & Communications
+          </h2>
+          <p class="text-gray-400 mb-6">
+            KitsuneMojo respects intellectual property rights. If you believe
+            any material violates your copyright, please contact us immediately
+            to request removal via the official protocol.
+          </p>
+          <div
+            class="bg-zinc-900/50 p-4 rounded-xl border border-orange-500/20 inline-block"
+          >
+            <span class="text-sm font-mono text-orange-500"
+              >nexus@kitsunemojo.io</span
+            >
+          </div>
+        </section>
+      </div>
+    </main>
+
+    <footer class="py-12 text-center border-t border-gray-900 mt-10">
+      <p class="text-[10px] text-gray-700 font-mono uppercase tracking-[0.4em]">
+        © 2026 KitsuneMojo • Privacy Protection Guaranteed
+      </p>
+    </footer>
+  </body>
+</html>

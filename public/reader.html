@@ -1,0 +1,985 @@
+<!doctype html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Kitsune Mojo | Node Reader</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
+    <style>
+        body {
+            background-color: #050505;
+            color: #e2e8f0;
+            overflow-x: hidden;
+        }
+        
+        /* Glass Nav (stile identico a index.html) */
+        .glass-nav {
+            background: rgba(10, 10, 10, 0.8);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid #1f2937;
+        }
+        
+        /* Progress bar */
+        .progress-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 2px;
+            background: #f6851b;
+            box-shadow: 0 0 10px rgba(246, 133, 27, 0.5);
+            z-index: 60;
+            transition: width 0.1s;
+        }
+        
+        /* Card stile Mojo (come le card dell'index) */
+        .mojo-card {
+            background: #0a0a0a;
+            border: 1px solid #1f2937;
+            border-radius: 1.5rem;
+            transition: all 0.3s ease;
+        }
+        .mojo-card:hover {
+            border-color: #f6851b;
+            box-shadow: 0 10px 30px -10px rgba(246, 133, 27, 0.2);
+        }
+        
+        /* Tag pills (come nell'index) */
+        .tag-pill {
+            background: #111;
+            border: 1px solid #1f2937;
+            color: #9ca3af;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            transition: all 0.2s;
+        }
+        .tag-pill:hover {
+            border-color: #f6851b;
+            color: #f6851b;
+            background: rgba(246, 133, 27, 0.05);
+        }
+        
+        /* Badge arancione (come nell'index) */
+        .mojo-badge {
+            background: #f6851b;
+            color: white;
+            font-weight: 900;
+            padding: 0.25rem 0.75rem;
+            border-radius: 0.75rem;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        
+        /* Info chip (stile stats-card dell'index) */
+        .info-chip {
+            background: linear-gradient(145deg, #0a0a0a 0%, #050505 100%);
+            border: 1px solid rgba(246, 133, 27, 0.1);
+            border-radius: 1rem;
+            padding: 0.5rem 1rem;
+        }
+        
+        /* Immagini manga */
+        .manga-image {
+            width: 100%;
+            max-width: 950px;
+            margin: 0 auto;
+            display: block;
+            border-radius: 1rem;
+            box-shadow: 0 20px 40px -15px #000;
+            transition: all 0.3s;
+        }
+        .manga-image:hover {
+            transform: scale(1.01);
+            box-shadow: 0 25px 50px -15px rgba(246, 133, 27, 0.3);
+        }
+        
+        .page-node {
+            scroll-margin-top: 120px;
+            margin-bottom: 2rem;
+        }
+        
+        /* Vote Buttons */
+        .vote-button {
+            background: #0a0a0a;
+            border: 1px solid #1f2937;
+            border-radius: 2rem;
+            padding: 0.5rem 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.2s;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+        .vote-button:hover {
+            border-color: #f6851b;
+            background: rgba(246, 133, 27, 0.05);
+        }
+        .vote-button.up.active {
+            background: #10b981;
+            border-color: #10b981;
+            color: white;
+        }
+        .vote-button.down.active {
+            background: #ef4444;
+            border-color: #ef4444;
+            color: white;
+        }
+        .vote-score {
+            font-size: 1.2rem;
+            font-weight: 900;
+            color: #f6851b;
+            min-width: 40px;
+            text-align: center;
+        }
+        
+        /* Scrollbar (come index) */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #050505;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #f6851b;
+            border-radius: 10px;
+        }
+        
+        /* Animazioni */
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        .animate-pulse-slow {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        
+        /* Dropdown tags */
+        .tags-dropdown {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            width: 320px;
+            background: #0a0a0a;
+            border: 1px solid #1f2937;
+            border-radius: 1.5rem;
+            padding: 1.5rem;
+            margin-top: 0.75rem;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-10px);
+            transition: all 0.2s;
+            box-shadow: 0 20px 40px -15px #000;
+            z-index: 100;
+        }
+        .tags-dropdown.show {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+        
+        /* Mobile toggle */
+        .mobile-toggle {
+            background: #0a0a0a;
+            border: 1px solid #1f2937;
+            border-radius: 2rem;
+            padding: 0.5rem 1rem;
+            font-size: 0.7rem;
+            color: #9ca3af;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .mobile-toggle:hover {
+            border-color: #f6851b;
+            color: #f6851b;
+        }
+        
+        /* Nascondi info section */
+        .info-section {
+            transition: all 0.3s ease;
+        }
+        .info-section.hidden-mobile {
+            opacity: 0;
+            visibility: hidden;
+            height: 0;
+            padding: 0;
+            margin: 0;
+            pointer-events: none;
+        }
+        
+        /* Wallet connection indicator */
+        .wallet-badge {
+            background: #0a0a0a;
+            border: 1px solid #f6851b;
+            border-radius: 30px;
+            padding: 0.25rem 0.75rem;
+            font-size: 0.6rem;
+            font-weight: 700;
+            color: #f6851b;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .desktop-only {
+                display: none;
+            }
+            .manga-image {
+                border-radius: 0.5rem;
+            }
+            .vote-section {
+                margin-top: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="progress-bar" class="progress-bar" style="width: 0%"></div>
+
+    <!-- NAVBAR (identica a index.html) -->
+    <nav class="glass-nav sticky top-0 z-50 px-6 py-4">
+        <div class="max-w-7xl mx-auto flex justify-between items-center">
+            <div class="flex items-center gap-2 cursor-pointer" onclick="window.location.href='index.html'">
+                <i class="fas fa-fox text-orange-500 text-2xl"></i>
+                <span class="text-xl font-black tracking-tighter uppercase">Kitsune<span class="text-orange-500">Mojo</span></span>
+            </div>
+            
+            <!-- Page counter mobile -->
+            <div class="md:hidden flex items-center gap-2">
+                <span id="page-counter-mobile" class="text-xs font-mono text-orange-500">000/000</span>
+            </div>
+            
+            <!-- Desktop nav -->
+            <div class="hidden md:flex items-center gap-6">
+                <div class="flex items-center gap-4">
+                    <a href="index.html" class="text-xs font-black text-gray-500 hover:text-white transition uppercase tracking-widest flex items-center gap-2">
+                        <i class="fas fa-arrow-left"></i> ARCHIVE
+                    </a>
+                    <span class="text-gray-800">|</span>
+                    <div class="flex items-center gap-2">
+                        <i class="fas fa-fox text-orange-500"></i>
+                        <span class="text-sm font-black uppercase tracking-tighter">Node<span class="text-orange-500">Reader</span></span>
+                    </div>
+                </div>
+                
+                <!-- Wallet Connection Badge -->
+                <div id="wallet-container" class="wallet-badge hidden">
+                    <i class="fas fa-wallet text-[8px]"></i>
+                    <span id="wallet-address">Not Connected</span>
+                </div>
+                
+                <button id="connect-wallet-btn" onclick="connectWallet()" class="text-xs bg-orange-600 hover:bg-orange-500 text-white px-4 py-2 rounded-full font-bold transition">
+                    Connect
+                </button>
+                
+                <!-- Page counter desktop -->
+                <div class="bg-zinc-900 border border-zinc-800 px-4 py-2 rounded-full">
+                    <span id="page-counter-desktop" class="text-xs font-mono text-orange-500">000 / 000</span>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- HEADER INFO (stile index) -->
+    <header class="pt-6 px-6">
+        <div class="max-w-7xl mx-auto">
+            <!-- Titolo e mobile toggle -->
+            <div class="flex justify-between items-start mb-4">
+                <h1 id="manga-title" class="text-2xl md:text-3xl font-black uppercase tracking-tighter text-white max-w-3xl leading-tight">
+                    Loading...
+                </h1>
+                
+                <!-- Mobile toggle per nascondere info -->
+                <button id="toggle-info" class="mobile-toggle md:hidden flex items-center gap-2">
+                    <i class="fas fa-info-circle"></i>
+                    <span>INFO</span>
+                    <i id="toggle-icon" class="fas fa-chevron-up text-[10px] transition-transform"></i>
+                </button>
+            </div>
+            
+            <!-- Badge rapidi (lingua + categoria) -->
+            <div class="flex gap-2 mb-6">
+                <span id="lang-badge" class="bg-zinc-900 border border-zinc-800 text-gray-400 px-3 py-1 rounded-full text-[10px] font-black uppercase">---</span>
+                <span id="cat-badge" class="bg-zinc-900 border border-zinc-800 text-orange-500 px-3 py-1 rounded-full text-[10px] font-black uppercase">---</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- INFO SECTION (nascondibile su mobile) -->
+    <div id="info-section" class="info-section px-6">
+        <div class="max-w-7xl mx-auto">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+                <!-- Artist card -->
+                <div id="artist-card" class="info-chip hidden">
+                    <span class="text-gray-600 text-[9px] font-black uppercase tracking-widest block mb-1">Artista</span>
+                    <div class="flex items-center gap-2">
+                        <i class="fas fa-paint-brush text-orange-500 text-xs"></i>
+                        <span id="artist-name" class="text-white font-black text-sm">---</span>
+                    </div>
+                </div>
+                
+                <!-- Pages card -->
+                <div class="info-chip">
+                    <span class="text-gray-600 text-[9px] font-black uppercase tracking-widest block mb-1">Nodi</span>
+                    <div class="flex items-center gap-2">
+                        <i class="fas fa-book-open text-orange-500 text-xs"></i>
+                        <span id="total-pages" class="text-white font-black text-sm">0</span>
+                    </div>
+                </div>
+                
+                <!-- Votes card -->
+                <div class="info-chip">
+                    <span class="text-gray-600 text-[9px] font-black uppercase tracking-widest block mb-1">Voti</span>
+                    <div class="flex items-center gap-2">
+                        <i class="fas fa-arrow-up text-green-500 text-xs"></i>
+                        <span id="up-votes" class="text-white font-black text-sm">0</span>
+                        <i class="fas fa-arrow-down text-red-500 text-xs ml-2"></i>
+                        <span id="down-votes" class="text-white font-black text-sm">0</span>
+                        <span id="vote-score" class="ml-auto text-orange-500 font-black">0</span>
+                    </div>
+                </div>
+                
+                <!-- Tags card con dropdown -->
+                <div class="info-chip relative">
+                    <span class="text-gray-600 text-[9px] font-black uppercase tracking-widest block mb-1">Metadata</span>
+                    <button id="tags-button" class="flex items-center gap-2 w-full text-left">
+                        <i class="fas fa-tags text-orange-500 text-xs"></i>
+                        <span class="text-white font-black text-sm flex-1">TAGS [<span id="tag-count">0</span>]</span>
+                        <i class="fas fa-chevron-down text-gray-600 text-[10px] transition-transform"></i>
+                    </button>
+                    
+                    <!-- Dropdown tags -->
+                    <div id="tags-dropdown" class="tags-dropdown">
+                        <div class="flex items-center gap-2 mb-4 pb-3 border-b border-zinc-800">
+                            <i class="fas fa-tags text-orange-500"></i>
+                            <span class="text-[9px] font-black uppercase tracking-widest text-gray-500">Tag Archive</span>
+                            <span id="dropdown-tag-count" class="ml-auto text-[9px] bg-zinc-900 text-orange-500 px-2 py-1 rounded-full">0</span>
+                        </div>
+                        <div id="tags-list" class="flex flex-wrap gap-2 max-h-60 overflow-y-auto">
+                            <!-- Tags inseriti qui -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Vote Buttons Section -->
+            <div class="flex justify-center md:justify-start gap-4 mb-8 vote-section">
+                <button id="vote-up" onclick="handleVote('up')" class="vote-button up">
+                    <i class="fas fa-arrow-up"></i>
+                    <span>Up</span>
+                </button>
+                <div class="vote-score" id="vote-score-display">0</div>
+                <button id="vote-down" onclick="handleVote('down')" class="vote-button down">
+                    <i class="fas fa-arrow-down"></i>
+                    <span>Down</span>
+                </button>
+            </div>
+            
+            <!-- Bookmark Status -->
+            <div id="bookmark-status" class="hidden mb-4">
+                <div class="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-3 inline-flex items-center gap-3">
+                    <i class="fas fa-bookmark text-orange-500"></i>
+                    <span class="text-xs font-mono">Progress: <span id="bookmark-progress">0%</span></span>
+                    <span class="text-xs text-gray-600">|</span>
+                    <span class="text-xs font-mono">Page <span id="bookmark-page">0</span>/<span id="bookmark-total">0</span></span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- READER CONTAINER -->
+    <main id="reader" class="px-4 pb-12 flex flex-col items-center">
+        <div id="loading-state" class="py-40 text-center">
+            <i class="fas fa-circle-notch fa-spin text-4xl text-orange-500 mb-4"></i>
+            <p class="text-[10px] font-mono uppercase tracking-[0.3em] text-gray-600 animate-pulse-slow">
+                CARICAMENTO NODI
+            </p>
+        </div>
+    </main>
+
+    <!-- BACK TO TOP (come index) -->
+    <button
+        id="backToTop"
+        onclick="window.scrollTo({ top: 0, behavior: 'smooth' })"
+        class="fixed bottom-8 right-8 bg-orange-600 text-white w-12 h-12 rounded-full shadow-2xl opacity-0 transition-all duration-300 flex items-center justify-center hover:bg-orange-500 z-50 translate-y-4 hover:scale-110"
+    >
+        <i class="fas fa-chevron-up"></i>
+    </button>
+
+    <script>
+        // ============================================
+        // CONFIGURAZIONE
+        // ============================================
+        const PROXY_URL = 'http://localhost:3000/admin/proxy?url=';
+        const API_URL = 'http://localhost:3000/admin';
+        const READER_API = 'http://localhost:3000/reader';
+        const params = new URLSearchParams(window.location.search);
+        const mangaId = params.get('id');
+
+        // ============================================
+        // STATO GLOBALE
+        // ============================================
+        let userWallet = null;
+        let readingSessionId = null;
+        let currentPage = 1;
+        let totalPagesCount = 1;
+        let currentVotes = { upvotes: 0, downvotes: 0, userVote: null };
+        let currentBookmark = null;
+
+        // ============================================
+        // WALLET CONNECTION
+        // ============================================
+        async function connectWallet() {
+            if (window.ethereum) {
+                try {
+                    const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+                    userWallet = accounts[0].toLowerCase();
+                    
+                    document.getElementById('connect-wallet-btn').classList.add('hidden');
+                    document.getElementById('wallet-container').classList.remove('hidden');
+                    document.getElementById('wallet-address').innerText = 
+                        userWallet.substring(0, 6) + '...' + userWallet.slice(-4);
+                    
+                    console.log('✅ Wallet connected:', userWallet);
+                    
+                    // Aggiorna stato voti con wallet
+                    await loadVoteStatus();
+                    
+                    // Carica bookmark
+                    await loadBookmark();
+                    
+                } catch (err) {
+                    console.error('Wallet connection failed:', err);
+                }
+            } else {
+                alert('Please install MetaMask');
+            }
+        }
+
+        // ============================================
+        // VOTE FUNCTIONS (CORRETTE)
+        // ============================================
+        async function loadVoteStatus() {
+            if (!mangaId) return;
+            
+            try {
+                const url = `${READER_API}/manga/${mangaId}/votes${userWallet ? `?wallet=${userWallet}` : ''}`;
+                console.log('🔍 Fetching votes from:', url);
+                
+                const res = await fetch(url);
+                if (res.ok) {
+                    const data = await res.json();
+                    console.log('📊 Vote data received:', data);
+                    
+                    // Verifica che i dati siano nel formato corretto
+                    if (data && typeof data === 'object') {
+                        currentVotes = {
+                            upvotes: data.upvotes || 0,
+                            downvotes: data.downvotes || 0,
+                            userVote: data.userVote || null
+                        };
+                        updateVoteUI();
+                    } else {
+                        console.warn('⚠️ Invalid vote data format:', data);
+                    }
+                } else {
+                    console.warn('⚠️ Vote endpoint returned:', res.status);
+                    // Usa valori di default se l'endpoint non è disponibile
+                    currentVotes = { upvotes: 0, downvotes: 0, userVote: null };
+                    updateVoteUI();
+                }
+            } catch (err) {
+                console.error('Error loading votes:', err);
+                currentVotes = { upvotes: 0, downvotes: 0, userVote: null };
+                updateVoteUI();
+            }
+        }
+
+        async function handleVote(type) {
+            if (!userWallet) {
+                alert('Connect wallet to vote');
+                return;
+            }
+
+            console.log('🗳️ Voting:', type, 'for manga:', mangaId);
+            
+            try {
+                const res = await fetch(`${READER_API}/manga/${mangaId}/vote`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        voteType: type,
+                        wallet: userWallet 
+                    })
+                });
+
+                if (res.ok) {
+                    const data = await res.json();
+                    console.log('✅ Vote response:', data);
+                    
+                    // Aggiorna i voti correnti
+                    currentVotes = {
+                        upvotes: data.upvotes || 0,
+                        downvotes: data.downvotes || 0,
+                        userVote: data.userVote || null
+                    };
+                    
+                    // Forza l'aggiornamento dell'UI
+                    updateVoteUI();
+                    
+                    // Aggiungi effetto visivo
+                    const button = document.getElementById(`vote-${type}`);
+                    button.classList.add('animate-pulse');
+                    setTimeout(() => button.classList.remove('animate-pulse'), 500);
+                    
+                } else {
+                    const error = await res.text();
+                    console.error('❌ Vote failed:', res.status, error);
+                }
+            } catch (err) {
+                console.error('Vote error:', err);
+            }
+        }
+
+        function updateVoteUI() {
+            console.log('🔄 Updating vote UI with:', currentVotes);
+            
+            // Aggiorna contatori
+            const upVotesEl = document.getElementById('up-votes');
+            const downVotesEl = document.getElementById('down-votes');
+            const voteScoreEl = document.getElementById('vote-score');
+            const voteScoreDisplayEl = document.getElementById('vote-score-display');
+            
+            if (upVotesEl) upVotesEl.innerText = currentVotes.upvotes;
+            if (downVotesEl) downVotesEl.innerText = currentVotes.downvotes;
+            
+            const score = currentVotes.upvotes - currentVotes.downvotes;
+            if (voteScoreEl) voteScoreEl.innerText = score;
+            if (voteScoreDisplayEl) voteScoreDisplayEl.innerText = score;
+            
+            // Aggiorna classi attive
+            const upButton = document.getElementById('vote-up');
+            const downButton = document.getElementById('vote-down');
+            
+            if (upButton && downButton) {
+                upButton.classList.remove('active');
+                downButton.classList.remove('active');
+                
+                if (currentVotes.userVote === 'up') {
+                    upButton.classList.add('active');
+                    console.log('👍 Up button activated');
+                } else if (currentVotes.userVote === 'down') {
+                    downButton.classList.add('active');
+                    console.log('👎 Down button activated');
+                }
+            }
+        }
+
+        // ============================================
+        // BOOKMARK FUNCTIONS
+        // ============================================
+        /**
+         * COME FUNZIONANO I BOOKMARK:
+         * 
+         * 1. Quando leggi un manga, il progresso viene automaticamente salvato
+         * 2. I bookmark sono salvati nel database (tabella 'bookmarks')
+         * 3. Quando riapri un manga, riparti dall'ultima pagina letta
+         * 4. Puoi vedere tutti i tuoi bookmark in una pagina dedicata
+         * 
+         * Endpoints:
+         * - GET    /reader/manga/:id/progress  - Ottieni progresso
+         * - POST   /reader/manga/:id/progress  - Salva progresso
+         * - GET    /reader/bookmarks           - Lista tutti i bookmark
+         */
+
+        async function loadBookmark() {
+            if (!mangaId || !userWallet) return;
+            
+            try {
+                const res = await fetch(`${READER_API}/manga/${mangaId}/progress`, {
+                    headers: { 'x-wallet': userWallet }
+                });
+                
+                if (res.ok) {
+                    const data = await res.json();
+                    console.log('🔖 Bookmark loaded:', data);
+                    
+                    if (data) {
+                        currentBookmark = data;
+                        updateBookmarkUI();
+                        
+                        // Opzionale: scrolla all'ultima pagina letta
+                        if (data.currentPage > 1) {
+                            setTimeout(() => {
+                                const pageElement = document.querySelector(`[data-page="${data.currentPage}"]`);
+                                if (pageElement) {
+                                    pageElement.scrollIntoView({ behavior: 'smooth' });
+                                }
+                            }, 1000);
+                        }
+                    }
+                }
+            } catch (err) {
+                console.error('Error loading bookmark:', err);
+            }
+        }
+
+        async function saveBookmark(page) {
+            if (!userWallet || !mangaId) return;
+            
+            try {
+                const res = await fetch(`${READER_API}/manga/${mangaId}/progress`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        wallet: userWallet,
+                        page: page,
+                        totalPages: totalPagesCount
+                    })
+                });
+                
+                if (res.ok) {
+                    const data = await res.json();
+                    console.log(`🔖 Bookmark saved for page ${page}`);
+                    currentBookmark = data;
+                    updateBookmarkUI();
+                }
+            } catch (err) {
+                console.error('Error saving bookmark:', err);
+            }
+        }
+
+        function updateBookmarkUI() {
+            const bookmarkEl = document.getElementById('bookmark-status');
+            const progressEl = document.getElementById('bookmark-progress');
+            const pageEl = document.getElementById('bookmark-page');
+            const totalEl = document.getElementById('bookmark-total');
+            
+            if (currentBookmark && bookmarkEl) {
+                bookmarkEl.classList.remove('hidden');
+                if (progressEl) progressEl.innerText = currentBookmark.progress + '%';
+                if (pageEl) pageEl.innerText = currentBookmark.currentPage;
+                if (totalEl) totalEl.innerText = currentBookmark.totalPages;
+            }
+        }
+
+        // ============================================
+        // TRACKING FUNCTIONS
+        // ============================================
+        async function trackEvent(type, mangaId = null, page = null) {
+            try {
+                const payload = {
+                    type,
+                    mangaId: mangaId || (mangaId ? parseInt(mangaId) : null),
+                    wallet: userWallet || 'guest'
+                };
+                
+                await fetch(`${API_URL}/track/event`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+            } catch (err) {
+                console.error('Tracking error:', err);
+            }
+        }
+
+        async function startReadingSession() {
+            if (!mangaId) return;
+            
+            try {
+                await trackEvent('view', mangaId);
+            } catch (err) {
+                console.error('Error starting reading session:', err);
+            }
+        }
+
+        // ============================================
+        // DOM ELEMENTS
+        // ============================================
+        const reader = document.getElementById('reader');
+        const titleEl = document.getElementById('manga-title');
+        const artistCard = document.getElementById('artist-card');
+        const artistName = document.getElementById('artist-name');
+        const totalPages = document.getElementById('total-pages');
+        const langBadge = document.getElementById('lang-badge');
+        const catBadge = document.getElementById('cat-badge');
+        const tagCount = document.getElementById('tag-count');
+        const dropdownTagCount = document.getElementById('dropdown-tag-count');
+        const tagsList = document.getElementById('tags-list');
+        const tagsButton = document.getElementById('tags-button');
+        const tagsDropdown = document.getElementById('tags-dropdown');
+        const toggleInfo = document.getElementById('toggle-info');
+        const infoSection = document.getElementById('info-section');
+        const toggleIcon = document.getElementById('toggle-icon');
+        const backToTop = document.getElementById('backToTop');
+
+        // ============================================
+        // UI FUNCTIONS
+        // ============================================
+        let infoVisible = true;
+        if (toggleInfo) {
+            toggleInfo.addEventListener('click', () => {
+                infoVisible = !infoVisible;
+                if (infoVisible) {
+                    infoSection.classList.remove('hidden-mobile');
+                    toggleIcon.style.transform = 'rotate(0deg)';
+                } else {
+                    infoSection.classList.add('hidden-mobile');
+                    toggleIcon.style.transform = 'rotate(180deg)';
+                }
+            });
+        }
+
+        tagsButton.addEventListener('click', (e) => {
+            e.stopPropagation();
+            tagsDropdown.classList.toggle('show');
+            const icon = tagsButton.querySelector('.fa-chevron-down');
+            if (icon) {
+                icon.style.transform = tagsDropdown.classList.contains('show') ? 'rotate(180deg)' : 'rotate(0deg)';
+            }
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!tagsButton.contains(e.target) && !tagsDropdown.contains(e.target)) {
+                tagsDropdown.classList.remove('show');
+                const icon = tagsButton.querySelector('.fa-chevron-down');
+                if (icon) icon.style.transform = 'rotate(0deg)';
+            }
+        });
+
+        window.onscroll = function() {
+            const winScroll = document.documentElement.scrollTop;
+            const height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+            if (height > 0) {
+                document.getElementById('progress-bar').style.width = (winScroll / height) * 100 + '%';
+            }
+            
+            if (winScroll > 400) {
+                backToTop.style.opacity = '1';
+                backToTop.style.transform = 'translateY(0)';
+            } else {
+                backToTop.style.opacity = '0';
+                backToTop.style.transform = 'translateY(20px)';
+            }
+        };
+
+        function updatePageCounters(current, total) {
+            currentPage = current;
+            totalPagesCount = total;
+            
+            const currentStr = current.toString().padStart(3, '0');
+            const totalStr = total.toString().padStart(3, '0');
+            
+            const mobileCounter = document.getElementById('page-counter-mobile');
+            const desktopCounter = document.getElementById('page-counter-desktop');
+            
+            if (mobileCounter) mobileCounter.innerText = `${currentStr}/${totalStr}`;
+            if (desktopCounter) desktopCounter.innerText = `${currentStr} / ${totalStr}`;
+            
+            // Salva bookmark (con debounce per non fare troppe chiamate)
+            if (userWallet) {
+                saveBookmark(current);
+            }
+        }
+
+        // ============================================
+        // LOAD MANGA (CORRETTO)
+        // ============================================
+        async function loadManga() {
+            if (!mangaId) {
+                reader.innerHTML = `<div class="py-40 text-center text-orange-500 font-mono text-xs uppercase">⚠️ ID MANGA MANCANTE</div>`;
+                return;
+            }
+
+            try {
+                const res = await fetch(`${API_URL}/manga/${mangaId}`);
+                if (!res.ok) throw new Error('Manga non trovato');
+                
+                const manga = await res.json();
+                console.log('📦 Manga data:', manga);
+
+                // Aggiorna header
+                titleEl.innerText = manga.titolo || 'Senza titolo';
+                
+                // GESTIONE ROBUSTA DI CATEGORIE
+                let categoriaText = 'UNSORTED';
+                if (manga.categorie) {
+                    if (typeof manga.categorie === 'string') {
+                        categoriaText = manga.categorie;
+                    } else if (typeof manga.categorie === 'object') {
+                        categoriaText = manga.categorie.nome || manga.categorie.name || 'UNSORTED';
+                    } else if (Array.isArray(manga.categorie) && manga.categorie.length > 0) {
+                        const firstCat = manga.categorie[0];
+                        categoriaText = firstCat.nome || firstCat.name || firstCat || 'UNSORTED';
+                    }
+                }
+                catBadge.innerText = categoriaText.toUpperCase();
+                
+                // Aggiorna lingua
+                langBadge.innerText = (manga.lingua || 'JP').toUpperCase();
+                
+                // Aggiorna pagine
+                totalPages.innerText = manga.numero_pagine || '0';
+                totalPagesCount = manga.numero_pagine || 0;
+                
+                // GESTIONE ROBUSTA DI ARTISTA
+                let artistaNome = null;
+                if (manga.artista) {
+                    artistaNome = typeof manga.artista === 'string' ? manga.artista : 
+                                  manga.artista.nome || manga.artista.name || null;
+                } else if (manga.artisti) {
+                    if (Array.isArray(manga.artisti) && manga.artisti.length > 0) {
+                        artistaNome = manga.artisti[0].nome || manga.artisti[0].name || null;
+                    } else if (typeof manga.artisti === 'object') {
+                        artistaNome = manga.artisti.nome || manga.artisti.name || null;
+                    }
+                }
+                
+                if (artistaNome) {
+                    artistName.innerText = artistaNome;
+                    artistCard.classList.remove('hidden');
+                } else {
+                    artistCard.classList.add('hidden');
+                }
+                
+                // GESTIONE ROBUSTA DI TAGS
+                let tags = [];
+                if (manga.manga_tags && Array.isArray(manga.manga_tags)) {
+                    tags = manga.manga_tags.map(t => {
+                        if (t.tags && t.tags.nome) return t.tags.nome;
+                        if (t.nome) return t.nome;
+                        if (typeof t === 'string') return t;
+                        return null;
+                    }).filter(Boolean);
+                } else if (manga.tags && Array.isArray(manga.tags)) {
+                    tags = manga.tags.map(t => {
+                        if (t.nome) return t.nome;
+                        if (typeof t === 'string') return t;
+                        return null;
+                    }).filter(Boolean);
+                }
+                
+                if (tags.length > 0) {
+                    tagCount.innerText = tags.length;
+                    dropdownTagCount.innerText = tags.length;
+                    tagsList.innerHTML = tags.map(t => 
+                        `<span class="tag-pill">${t}</span>`
+                    ).join('');
+                } else {
+                    tagCount.innerText = '0';
+                    dropdownTagCount.innerText = '0';
+                    tagsList.innerHTML = '<span class="text-gray-600 text-xs">Nessun tag</span>';
+                }
+
+                // GESTIONE ROBUSTA DI PAGINE
+                let pages = manga.pagine || manga.pages || [];
+                if (typeof pages === 'string') {
+                    try {
+                        pages = JSON.parse(pages);
+                    } catch {
+                        pages = [];
+                    }
+                }
+                
+                if (!Array.isArray(pages)) {
+                    pages = [];
+                }
+
+                // Inizia sessione di lettura se wallet connesso
+                if (userWallet) {
+                    await startReadingSession();
+                }
+
+                // Inizia caricamento pagine
+                renderPages(pages, manga.numero_pagine || pages.length);
+
+            } catch (err) {
+                console.error('❌ Load error:', err);
+                reader.innerHTML = `<div class="py-40 text-center text-red-500 font-mono text-xs uppercase">❌ ${err.message}</div>`;
+            }
+        }
+
+        // Render pagine
+        function renderPages(pages, total) {
+            reader.innerHTML = '';
+            
+            if (!pages?.length) {
+                reader.innerHTML = `<div class="py-40 text-center text-gray-500 font-mono text-xs uppercase">📭 Nessuna pagina trovata</div>`;
+                return;
+            }
+
+            pages.forEach((url, index) => {
+                const pageNum = index + 1;
+                
+                const pageDiv = document.createElement('div');
+                pageDiv.className = 'page-node w-full';
+                pageDiv.dataset.page = pageNum;
+                
+                const img = document.createElement('img');
+                img.className = 'manga-image opacity-0 transition-opacity duration-500';
+                img.src = `${PROXY_URL}${encodeURIComponent(url)}`;
+                img.alt = `Pagina ${pageNum}`;
+                img.loading = 'lazy';
+                
+                img.onload = () => {
+                    img.classList.replace('opacity-0', 'opacity-100');
+                };
+                
+                img.onerror = () => {
+                    img.src = `https://placehold.co/800x1200/0a0a0a/f6851b?text=PAGINA+${pageNum}`;
+                    img.classList.replace('opacity-0', 'opacity-100');
+                };
+                
+                pageDiv.appendChild(img);
+                reader.appendChild(pageDiv);
+            });
+
+            // Aggiorna contatore prima pagina
+            updatePageCounters(1, total);
+            setupObserver(total);
+            
+            // DOPO aver renderizzato le pagine, carica i voti e bookmark
+            setTimeout(() => {
+                loadVoteStatus();
+                if (userWallet) {
+                    loadBookmark();
+                }
+            }, 500);
+        }
+
+        // Observer per aggiornare contatore durante scroll
+        function setupObserver(total) {
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        const page = entry.target.dataset.page;
+                        updatePageCounters(parseInt(page), total);
+                    }
+                });
+            }, { threshold: 0.2, rootMargin: '-100px 0px' });
+
+            document.querySelectorAll('.page-node').forEach(node => observer.observe(node));
+        }
+
+        // ============================================
+        // INITIALIZATION
+        // ============================================
+        window.addEventListener('load', () => {
+            loadManga();
+        });
+
+        // Esponi funzioni globali
+        window.connectWallet = connectWallet;
+        window.handleVote = handleVote;
+    </script>
+</body>
+</html>

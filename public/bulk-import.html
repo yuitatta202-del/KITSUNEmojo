@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kitsune Mojo - Deep Ingestion</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body { background-color: #050505; color: #e2e8f0; font-family: 'Inter', sans-serif; }
+        .glass-nav { background: rgba(10, 10, 10, 0.8); backdrop-filter: blur(12px); border-bottom: 1px solid #1f2937; }
+        .terminal { background: #000; border: 1px solid #1f2937; font-family: 'Fira Code', monospace; scrollbar-width: thin; }
+        .terminal::-webkit-scrollbar { width: 4px; }
+        .terminal::-webkit-scrollbar-thumb { background: #f6851b; }
+        .btn-mojo { background: #f6851b; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .btn-mojo:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(246, 133, 27, 0.4); }
+        .btn-mojo:disabled { background: #27272a; cursor: not-allowed; opacity: 0.6; }
+        input, textarea { background: #0a0a0a !important; border: 1px solid #1f2937 !important; color: #f6851b !important; }
+        input:focus, textarea:focus { border-color: #f6851b !important; outline: none; }
+        .status-success { color: #10b981; }
+        .status-error { color: #ef4444; }
+        .status-info { color: #3b82f6; }
+        .status-warning { color: #f59e0b; }
+        .stats-card {
+            background: rgba(10, 10, 10, 0.8);
+            border: 1px solid rgba(246, 133, 27, 0.2);
+            transition: all 0.3s ease;
+        }
+        .stats-card:hover {
+            border-color: #f6851b;
+            box-shadow: 0 0 20px rgba(246, 133, 27, 0.1);
+        }
+    </style>
+</head>
+<body class="bg-black text-gray-300">
+
+    <nav class="glass-nav sticky top-0 z-50 px-6 py-4">
+        <div class="max-w-7xl mx-auto flex justify-between items-center">
+            <div class="flex items-center gap-2 cursor-pointer" onclick="window.location.href = 'admin.html'">
+                <i class="fas fa-fox text-orange-500 text-2xl"></i>
+                <span class="text-xl font-black tracking-tighter uppercase">Kitsune<span class="text-orange-500">Mojo</span></span>
+            </div>
+            <div class="flex items-center gap-4">
+                <div id="wallet-status" class="flex items-center gap-3">
+                    <button id="connect-wallet-btn" onclick="connectWallet()" class="bg-orange-600 text-white px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider hover:bg-orange-500 transition flex items-center gap-2">
+                        <i class="fab fa-metamask"></i> Connect
+                    </button>
+                    <div id="wallet-info" class="hidden text-[10px] font-mono text-gray-500 uppercase tracking-widest">
+                        Node: <span id="wallet-address" class="text-orange-500/70 italic">Disconnected</span>
+                    </div>
+                </div>
+                <a href="admin.html" class="text-[10px] font-black text-gray-500 hover:text-white transition uppercase tracking-widest">
+                    <i class="fas fa-arrow-left mr-1"></i> Dashboard
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <main class="max-w-6xl mx-auto px-6 py-12">
+        <div class="mb-10 text-center">
+            <h2 class="text-4xl font-black uppercase tracking-tighter">Bulk <span class="text-orange-500">Ingestion</span></h2>
+            <p class="text-gray-600 text-[10px] font-bold uppercase tracking-[0.5em] mt-2 text-center">Protocollo Sincronizzazione Asset Massiva</p>
+        </div>
+
+        <!-- Stats Cards -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+            <div class="stats-card rounded-2xl p-4 text-center">
+                <span class="text-gray-500 text-[8px] uppercase tracking-widest font-black">Totali</span>
+                <div id="total-stats" class="text-xl font-black text-white">0</div>
+            </div>
+            <div class="stats-card rounded-2xl p-4 text-center">
+                <span class="text-gray-500 text-[8px] uppercase tracking-widest font-black">Successi</span>
+                <div id="success-stats" class="text-xl font-black text-green-500">0</div>
+            </div>
+            <div class="stats-card rounded-2xl p-4 text-center">
+                <span class="text-gray-500 text-[8px] uppercase tracking-widest font-black">Falliti</span>
+                <div id="failed-stats" class="text-xl font-black text-red-500">0</div>
+            </div>
+            <div class="stats-card rounded-2xl p-4 text-center">
+                <span class="text-gray-500 text-[8px] uppercase tracking-widest font-black">Tempo</span>
+                <div id="time-stats" class="text-xl font-black text-orange-500">00:00</div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div class="space-y-6">
+                <div class="bg-zinc-950 p-8 rounded-3xl border border-zinc-900 shadow-2xl">
+                    <div class="flex justify-between items-center mb-4">
+                        <label class="text-[10px] font-black uppercase text-gray-500 tracking-widest">URL Sorgente (Uno per riga)</label>
+                        <span id="url-count" class="text-orange-500 text-[10px] font-bold">0 URL rilevati</span>
+                    </div>
+                    <textarea id="url-input" 
+                        oninput="updateCount()"
+                        placeholder="https://hentaifox.com/g/12345/..." 
+                        class="w-full h-80 rounded-2xl p-5 text-xs font-mono leading-relaxed resize-none transition-all focus:ring-1 focus:ring-orange-500/50"
+                    ></textarea>
+                    
+                    <div class="flex gap-4 mt-6">
+                        <button onclick="clearInput()" class="flex-1 bg-zinc-900 py-4 rounded-2xl font-black uppercase text-xs text-gray-400 hover:text-white transition">
+                            <i class="fas fa-trash mr-2"></i> Clear
+                        </button>
+                        <button id="import-btn" onclick="startBulkProcess()" class="flex-1 btn-mojo py-4 rounded-2xl font-black uppercase text-xs tracking-widest text-white">
+                            Esegui Sincronizzazione
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex flex-col h-full">
+                <div class="bg-zinc-950 p-8 rounded-3xl border border-zinc-900 flex-grow flex flex-col shadow-2xl overflow-hidden">
+                    <div class="flex justify-between items-center mb-4">
+                        <label class="text-[10px] font-black uppercase text-gray-500 tracking-widest">System Output & Progress</label>
+                        <div id="progress-bar" class="text-orange-500 font-mono text-[10px]">IDLE</div>
+                    </div>
+                    <div id="log-terminal" class="terminal flex-grow rounded-2xl p-5 text-[10px] space-y-2 overflow-y-auto max-h-[480px]">
+                        <div class="text-zinc-700 italic">// In attesa di input...</div>
+                    </div>
+                    
+                    <!-- Control Buttons -->
+                    <div class="flex gap-4 mt-4">
+                        <button onclick="copyLogs()" class="flex-1 bg-zinc-900 py-3 rounded-xl text-[8px] font-black uppercase tracking-widest text-gray-400 hover:text-white transition">
+                            <i class="fas fa-copy mr-1"></i> Copy Logs
+                        </button>
+                        <button onclick="clearLogs()" class="flex-1 bg-zinc-900 py-3 rounded-xl text-[8px] font-black uppercase tracking-widest text-gray-400 hover:text-white transition">
+                            <i class="fas fa-eraser mr-1"></i> Clear Logs
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        const API_URL = 'http://localhost:3000/admin/bulk/ingest';
+        const AUTHORIZED_ADMINS = ['0x2aab3b9458cbb3709c6a131b1d9a7a0eb111efbc'.toLowerCase()];
+        
+        let isRunning = false;
+        let userWallet = null;
+        let startTime = null;
+        let successCount = 0;
+        let failedCount = 0;
+
+        async function connectWallet() {
+            if (window.ethereum) {
+                try {
+                    const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+                    userWallet = accounts[0].toLowerCase();
+                    
+                    document.getElementById('connect-wallet-btn').classList.add('hidden');
+                    document.getElementById('wallet-info').classList.remove('hidden');
+                    document.getElementById('wallet-address').innerText = userWallet.substring(0, 6) + '...' + userWallet.slice(-4);
+                    
+                    const isAdmin = AUTHORIZED_ADMINS.includes(userWallet);
+                    addLog(`[SYSTEM] Node Connesso: ${userWallet}`, isAdmin ? 'status-success' : 'status-warning');
+                    
+                    if (!isAdmin) {
+                        addLog(`[WARNING] Wallet non autorizzato all'import. Modalità read-only.`, 'status-warning');
+                    }
+                    
+                    // Ascolta cambi di account
+                    window.ethereum.on('accountsChanged', (accounts) => {
+                        if (accounts.length === 0) {
+                            disconnectWallet();
+                        } else {
+                            userWallet = accounts[0].toLowerCase();
+                            document.getElementById('wallet-address').innerText = userWallet.substring(0, 6) + '...' + userWallet.slice(-4);
+                        }
+                    });
+
+                } catch (err) {
+                    addLog(`[ERROR] Connessione wallet fallita: ${err.message}`, 'status-error');
+                }
+            } else {
+                addLog(`[ERROR] MetaMask non rilevata. Installa MetaMask per continuare.`, 'status-error');
+            }
+        }
+
+        function disconnectWallet() {
+            userWallet = null;
+            document.getElementById('connect-wallet-btn').classList.remove('hidden');
+            document.getElementById('wallet-info').classList.add('hidden');
+            addLog(`[SYSTEM] Wallet disconnesso`, 'status-info');
+        }
+
+        function updateCount() {
+            const lines = document.getElementById('url-input').value.split('\n').filter(l => l.trim().length > 10);
+            document.getElementById('url-count').innerText = `${lines.length} URL rilevati`;
+        }
+
+        function clearInput() {
+            document.getElementById('url-input').value = '';
+            updateCount();
+            addLog(`[SYSTEM] Input pulito`, 'status-info');
+        }
+
+        function addLog(msg, className = '') {
+            const terminal = document.getElementById('log-terminal');
+            const entry = document.createElement('div');
+            entry.className = `flex gap-3 ${className}`;
+            entry.innerHTML = `<span class="opacity-30 text-white">[${new Date().toLocaleTimeString()}]</span> <span>${msg}</span>`;
+            terminal.appendChild(entry);
+            terminal.scrollTop = terminal.scrollHeight;
+        }
+
+        function clearLogs() {
+            const terminal = document.getElementById('log-terminal');
+            terminal.innerHTML = '<div class="text-zinc-700 italic">// Logs cancellati</div>';
+            addLog(`[SYSTEM] Terminale pulito`, 'status-info');
+        }
+
+        function copyLogs() {
+            const terminal = document.getElementById('log-terminal');
+            const logs = Array.from(terminal.children)
+                .map(el => el.innerText)
+                .join('\n');
+            
+            navigator.clipboard.writeText(logs).then(() => {
+                addLog(`[SYSTEM] Log copiati negli appunti`, 'status-success');
+            }).catch(() => {
+                addLog(`[ERROR] Impossibile copiare i log`, 'status-error');
+            });
+        }
+
+        function updateStats() {
+            const total = successCount + failedCount;
+            document.getElementById('total-stats').innerText = total;
+            document.getElementById('success-stats').innerText = successCount;
+            document.getElementById('failed-stats').innerText = failedCount;
+            
+            if (startTime) {
+                const elapsed = Math.floor((Date.now() - startTime) / 1000);
+                const minutes = Math.floor(elapsed / 60);
+                const seconds = elapsed % 60;
+                document.getElementById('time-stats').innerText = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            }
+        }
+
+        async function startBulkProcess() {
+            if (isRunning) return;
+            
+            if (!userWallet) {
+                await connectWallet();
+                if (!userWallet) return;
+            }
+
+            if (!AUTHORIZED_ADMINS.includes(userWallet)) {
+                addLog(`[ACCESSO NEGATO] Wallet non autorizzato all'import`, 'status-error');
+                return;
+            }
+            
+            const input = document.getElementById('url-input');
+            const urls = input.value.split('\n')
+                .map(u => u.trim())
+                .filter(u => u.length > 10 && u.startsWith('http'));
+            
+            if (urls.length === 0) {
+                addLog("[ABORT] Nessun URL valido inserito", "status-error");
+                return;
+            }
+
+            // Reset stats
+            successCount = 0;
+            failedCount = 0;
+            startTime = Date.now();
+            updateStats();
+
+            isRunning = true;
+            const btn = document.getElementById('import-btn');
+            btn.disabled = true;
+            btn.innerHTML = `<i class="fas fa-circle-notch animate-spin mr-2"></i> Ingestione in corso...`;
+
+            addLog(`[START] Avvio batch di ${urls.length} elementi`, "status-info");
+
+            for (let i = 0; i < urls.length; i++) {
+                const url = urls[i];
+                document.getElementById('progress-bar').innerText = `PROCESSING ${i + 1}/${urls.length}`;
+                
+                addLog(`[FETCH] Analisi asset ${i + 1}...`);
+                
+                try {
+                    const response = await fetch(API_URL, {
+                        method: 'POST',
+                        headers: { 
+                            'Content-Type': 'application/json',
+                            'x-wallet': userWallet 
+                        },
+                        body: JSON.stringify({ url })
+                    });
+
+                    const result = await response.json();
+
+                    if (response.ok && result.success) {
+                        successCount++;
+                        addLog(`[DONE] ${result.title || 'Senza titolo'} sincronizzato con successo (ID: ${result.id})`, 'status-success');
+                    } else {
+                        failedCount++;
+                        addLog(`[FAIL] ${url}: ${result.error || 'Errore sconosciuto'}`, 'status-error');
+                    }
+                } catch (err) {
+                    failedCount++;
+                    addLog(`[CRITIC] Errore di connessione: ${err.message}`, 'status-error');
+                }
+
+                updateStats();
+
+                // Delay per evitare rate limiting
+                await new Promise(resolve => setTimeout(resolve, 1500));
+            }
+
+            addLog(`[FINISH] Operazione completata - Successi: ${successCount}, Falliti: ${failedCount}`, 'status-info');
+            
+            isRunning = false;
+            btn.disabled = false;
+            btn.innerHTML = `Esegui Sincronizzazione`;
+            document.getElementById('progress-bar').innerText = `IDLE`;
+            startTime = null;
+        }
+
+        // Auto-connect e caricamento URL pendenti
+        window.addEventListener('load', async () => {
+            if (window.ethereum && window.ethereum.selectedAddress) {
+                await connectWallet();
+            } else {
+                addLog("[SYSTEM] In attesa di connessione wallet...", "status-info");
+            }
+            
+            // Recupera gli URL passati dalla dashboard
+            const pending = localStorage.getItem('kitsune_pending_urls');
+            if (pending) {
+                const textarea = document.getElementById('url-input');
+                textarea.value = pending;
+                localStorage.removeItem('kitsune_pending_urls');
+                updateCount();
+                addLog("[SYSTEM] URL importati dalla dashboard principale. Pronto per l'esecuzione.", "status-info");
+            }
+        });
+    </script>
+</body>
+</html>

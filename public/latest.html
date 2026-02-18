@@ -1,0 +1,523 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Kitsune Mojo | Latest Releases & Trending</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+    />
+    <style>
+      body {
+        background-color: #050505;
+        color: #e2e8f0;
+        scroll-behavior: smooth;
+      }
+      .glass-nav {
+        background: rgba(10, 10, 10, 0.8);
+        backdrop-filter: blur(12px);
+        border-bottom: 1px solid #1f2937;
+      }
+      
+      /* Card styles */
+      .manga-card {
+        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        animation: fadeIn 0.6s ease forwards;
+        opacity: 0;
+        background: #0a0a0a;
+        border: 1px solid #1f2937;
+        border-radius: 1.5rem;
+        overflow: hidden;
+      }
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+      .manga-card:hover {
+        transform: translateY(-10px) scale(1.02);
+        border-color: #f6851b;
+        box-shadow: 0 20px 40px rgba(246, 133, 27, 0.15);
+      }
+
+      /* Badge styles */
+      .badge-new {
+        background: linear-gradient(135deg, #f6851b, #e27613);
+        color: #000;
+        font-size: 0.6rem;
+        font-weight: 900;
+        padding: 0.25rem 0.75rem;
+        border-radius: 20px;
+        text-transform: uppercase;
+      }
+      
+      .badge-trending {
+        background: linear-gradient(135deg, #ef4444, #dc2626);
+        color: white;
+        font-size: 0.6rem;
+        font-weight: 900;
+        padding: 0.25rem 0.75rem;
+        border-radius: 20px;
+        text-transform: uppercase;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+      }
+
+      /* Stat card */
+      .stat-card {
+        background: #0a0a0a;
+        border: 1px solid #1f2937;
+        border-radius: 1rem;
+        padding: 1rem;
+        transition: all 0.2s;
+      }
+      .stat-card:hover {
+        border-color: #f6851b;
+      }
+      .stat-number {
+        font-size: 1.5rem;
+        font-weight: 900;
+        color: #f6851b;
+      }
+
+      /* Time filter tabs */
+      .time-tab {
+        background: #111;
+        border: 1px solid #1f2937;
+        color: #9ca3af;
+        padding: 0.5rem 1.5rem;
+        border-radius: 9999px;
+        font-size: 0.7rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        transition: all 0.2s;
+        cursor: pointer;
+      }
+      .time-tab:hover {
+        border-color: #f6851b;
+        color: #f6851b;
+      }
+      .time-tab.active {
+        background: #f6851b;
+        color: #000;
+        border-color: #f6851b;
+      }
+
+      /* View counter */
+      .view-counter {
+        background: rgba(0, 0, 0, 0.7);
+        backdrop-filter: blur(4px);
+        border: 1px solid rgba(246, 133, 27, 0.3);
+        color: #f6851b;
+        font-size: 0.5rem;
+        font-weight: 700;
+        padding: 0.2rem 0.5rem;
+        border-radius: 20px;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.2rem;
+      }
+
+      /* Vote indicator */
+      .vote-indicator {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+        font-size: 0.6rem;
+        color: #9ca3af;
+      }
+      .vote-up { color: #10b981; }
+      .vote-down { color: #ef4444; }
+
+      /* Scrollbar */
+      ::-webkit-scrollbar {
+        width: 8px;
+      }
+      ::-webkit-scrollbar-track {
+        background: #050505;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #f6851b;
+        border-radius: 10px;
+      }
+
+      /* Pulse animation for live indicator */
+      @keyframes pulse {
+        0% { opacity: 1; }
+        50% { opacity: 0.5; }
+        100% { opacity: 1; }
+      }
+      .live-pulse {
+        animation: pulse 2s infinite;
+      }
+    </style>
+  </head>
+  <body class="font-sans">
+    <nav class="glass-nav sticky top-0 z-50 px-6 py-4">
+      <div class="max-w-7xl mx-auto flex justify-between items-center">
+        <div
+          class="flex items-center gap-2 cursor-pointer"
+          onclick="window.location.href = 'index.html'"
+        >
+          <i class="fas fa-fox text-orange-500 text-2xl"></i>
+          <span class="text-xl font-black tracking-tighter uppercase"
+            >Kitsune<span class="text-orange-500">Mojo</span></span
+          >
+        </div>
+
+        <div
+          class="flex gap-6 text-sm font-bold text-gray-400 uppercase tracking-widest items-center"
+        >
+          <a
+            href="index.html"
+            class="hover:text-orange-500 transition font-black"
+            >Home</a
+          >
+          <a href="latest.html" class="text-orange-500 transition font-black"
+            >Latest</a
+          >
+          <a
+            href="admin.html"
+            class="text-gray-500 hover:text-orange-500 transition"
+            ><i class="fas fa-lock text-xs"></i> Admin</a
+          >
+        </div>
+      </div>
+    </nav>
+
+    <header class="py-16 px-6 text-center">
+      <h2
+        class="text-5xl md:text-7xl font-extrabold mb-4 tracking-tighter uppercase"
+      >
+        Latest <span class="text-orange-500">Drops</span>.
+      </h2>
+      <p
+        class="text-gray-500 max-w-2xl mx-auto italic uppercase text-xs tracking-[0.3em] mb-8"
+      >
+        Fresh from the Mojo Vault
+      </p>
+      
+      <!-- Live Stats Row -->
+      <div class="flex justify-center gap-4 mb-8 flex-wrap">
+        <div class="stat-card">
+          <div class="flex items-center gap-2">
+            <span class="w-2 h-2 bg-green-500 rounded-full live-pulse"></span>
+            <span class="text-[8px] text-gray-500 uppercase tracking-wider">LIVE</span>
+          </div>
+          <div class="stat-number" id="live-count">0</div>
+          <div class="text-[8px] text-gray-600">readers now</div>
+        </div>
+        <div class="stat-card">
+          <i class="fas fa-fire text-orange-500 mb-1"></i>
+          <div class="stat-number" id="today-views">0</div>
+          <div class="text-[8px] text-gray-600">views today</div>
+        </div>
+        <div class="stat-card">
+          <i class="fas fa-chart-line text-orange-500 mb-1"></i>
+          <div class="stat-number" id="week-trend">+0%</div>
+          <div class="text-[8px] text-gray-600">vs last week</div>
+        </div>
+      </div>
+      
+      <!-- Time Filter Tabs -->
+      <div class="flex justify-center gap-2 mb-8">
+        <button onclick="filterByTime('day')" class="time-tab active" id="tab-day">Today</button>
+        <button onclick="filterByTime('week')" class="time-tab" id="tab-week">This Week</button>
+        <button onclick="filterByTime('month')" class="time-tab" id="tab-month">This Month</button>
+        <button onclick="filterByTime('all')" class="time-tab" id="tab-all">All Time</button>
+      </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-6 pb-20">
+      <!-- Section Title -->
+      <div class="flex items-center gap-4 mb-8">
+        <h3 class="text-orange-500 font-black text-sm uppercase tracking-widest">
+          <i class="fas fa-clock mr-2"></i> RECENT UPLOADS
+        </h3>
+        <span class="h-px bg-gray-900 flex-1"></span>
+        <span id="result-count" class="text-[10px] text-gray-600 font-mono">0 items</span>
+      </div>
+      
+      <!-- Manga Grid -->
+      <div
+        id="manga-grid"
+        class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-8"
+      >
+        <div class="animate-pulse bg-gray-900 h-80 rounded-2xl"></div>
+        <div class="animate-pulse bg-gray-900 h-80 rounded-2xl"></div>
+        <div class="animate-pulse bg-gray-900 h-80 rounded-2xl"></div>
+        <div class="animate-pulse bg-gray-900 h-80 rounded-2xl"></div>
+        <div class="animate-pulse bg-gray-900 h-80 rounded-2xl"></div>
+      </div>
+      
+      <!-- Load More -->
+      <div id="load-more-container" class="text-center mt-10 hidden">
+        <button onclick="loadMore()" class="time-tab">
+          <i class="fas fa-spinner mr-2"></i> Load More
+        </button>
+      </div>
+    </main>
+
+    <footer class="py-12 text-center border-t border-gray-900 mt-10">
+      <p class="text-[10px] text-gray-700 font-mono uppercase tracking-[0.4em]">
+        © 2026 KitsuneMojo • <span id="live-update-time"></span>
+      </p>
+    </footer>
+
+    <script>
+      const ADMIN_API = 'http://localhost:3000/admin';
+      const API_URL = 'http://localhost:3000/api';
+      const PROXY_URL = 'http://localhost:3000/admin/proxy?url=';
+      
+      let allManga = [];
+      let filteredManga = [];
+      let currentPage = 1;
+      let itemsPerPage = 20;
+      let currentFilter = 'day';
+
+      // ============================================
+      // LIVE STATS
+      // ============================================
+      async function loadLiveStats() {
+        try {
+          const [realtimeRes, trendsRes] = await Promise.all([
+            fetch(`${API_URL}/analytics/realtime`).catch(() => ({ ok: false })),
+            fetch(`${API_URL}/analytics/trends`).catch(() => ({ ok: false }))
+          ]);
+
+          if (realtimeRes.ok) {
+            const realtime = await realtimeRes.json();
+            document.getElementById('live-count').innerText = realtime.activeNow || 0;
+            document.getElementById('today-views').innerText = realtime.viewsToday || 0;
+          }
+
+          if (trendsRes.ok) {
+            const trends = await trendsRes.json();
+            const weekTrend = trends.views || 0;
+            document.getElementById('week-trend').innerHTML = 
+              `<span class="${weekTrend >= 0 ? 'text-green-500' : 'text-red-500'}">${weekTrend >= 0 ? '+' : ''}${weekTrend}%</span>`;
+          }
+
+          document.getElementById('live-update-time').innerText = 
+            `Updated ${new Date().toLocaleTimeString()}`;
+
+        } catch (err) {
+          console.error('Error loading live stats:', err);
+        }
+      }
+
+      // ============================================
+      // LOAD MANGA
+      // ============================================
+      async function loadAllManga() {
+        try {
+          const res = await fetch(`${ADMIN_API}/manga`);
+          if (!res.ok) throw new Error('Failed to fetch');
+          
+          allManga = await res.json();
+          
+          // Aggiungi dati simulati per demo (in produzione verranno dal database)
+          allManga = allManga.map(m => ({
+            ...m,
+            views: Math.floor(Math.random() * 1000) + 100,
+            up_votes: Math.floor(Math.random() * 50),
+            down_votes: Math.floor(Math.random() * 10),
+            created_at: m.created_at || new Date().toISOString()
+          }));
+
+          applyFilter();
+          
+        } catch (err) {
+          console.error('Error:', err);
+          document.getElementById('manga-grid').innerHTML = `
+            <div class="col-span-full text-center py-20 text-gray-600">
+              <i class="fas fa-exclamation-triangle text-4xl mb-4"></i><br>
+              Error loading manga
+            </div>
+          `;
+        }
+      }
+
+      // ============================================
+      // FILTER FUNCTIONS
+      // ============================================
+      function filterByTime(filter) {
+        currentFilter = filter;
+        currentPage = 1;
+        
+        // Update active tab
+        document.querySelectorAll('.time-tab').forEach(tab => {
+          tab.classList.remove('active');
+        });
+        document.getElementById(`tab-${filter}`).classList.add('active');
+        
+        applyFilter();
+      }
+
+      function applyFilter() {
+        const now = new Date();
+        const filtered = allManga.filter(m => {
+          const created = new Date(m.created_at);
+          const diffDays = Math.floor((now - created) / (1000 * 60 * 60 * 24));
+          
+          switch(currentFilter) {
+            case 'day': return diffDays <= 1;
+            case 'week': return diffDays <= 7;
+            case 'month': return diffDays <= 30;
+            default: return true;
+          }
+        });
+
+        // Sort by date (newest first)
+        filtered.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+        
+        filteredManga = filtered;
+        document.getElementById('result-count').innerText = `${filtered.length} items`;
+        
+        displayManga(filtered.slice(0, itemsPerPage));
+        
+        const loadMoreBtn = document.getElementById('load-more-container');
+        if (filtered.length > itemsPerPage) {
+          loadMoreBtn.classList.remove('hidden');
+        } else {
+          loadMoreBtn.classList.add('hidden');
+        }
+      }
+
+      // ============================================
+      // DISPLAY FUNCTIONS
+      // ============================================
+      function displayManga(list) {
+        const grid = document.getElementById('manga-grid');
+        
+        if (list.length === 0) {
+          grid.innerHTML = `
+            <div class="col-span-full text-center py-20 text-gray-600">
+              <i class="fas fa-box-open text-4xl mb-4"></i><br>
+              No manga found for this period
+            </div>
+          `;
+          return;
+        }
+
+        grid.innerHTML = list
+          .map((m, index) => {
+            const isNew = new Date(m.created_at) > new Date(Date.now() - 24 * 60 * 60 * 1000);
+            const isTrending = m.views > 500;
+            const score = (m.up_votes || 0) - (m.down_votes || 0);
+            
+            return `
+            <div onclick="window.location.href='reader.html?id=${m.id}'" 
+                 style="animation-delay: ${index * 0.05}s"
+                 class="manga-card cursor-pointer">
+              <div class="relative aspect-[3/4] overflow-hidden">
+                <img src="${PROXY_URL}${encodeURIComponent(m.immagine || '')}" 
+                     class="w-full h-full object-cover transition duration-500 hover:scale-110" 
+                     alt="${m.titolo}"
+                     onerror="this.src='https://placehold.co/400x600/0a0a0a/f6851b?text=NO+COVER'">
+                
+                <!-- Badges -->
+                <div class="absolute top-2 left-2 flex flex-col gap-1">
+                  ${isNew ? '<span class="badge-new"><i class="fas fa-star mr-1"></i>NEW</span>' : ''}
+                  ${isTrending ? '<span class="badge-trending"><i class="fas fa-fire"></i>TRENDING</span>' : ''}
+                </div>
+                
+                <!-- View counter -->
+                <div class="absolute bottom-2 right-2 view-counter">
+                  <i class="fas fa-eye"></i>
+                  <span>${m.views || 0}</span>
+                </div>
+                
+                <!-- Hover overlay -->
+                <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-transparent opacity-0 hover:opacity-100 transition-opacity flex items-end p-4">
+                  <button class="w-full bg-orange-600 text-white font-bold py-2 rounded-xl text-sm shadow-xl">
+                    READ NOW
+                  </button>
+                </div>
+              </div>
+              
+              <div class="p-4">
+                <h3 class="font-bold text-sm leading-tight line-clamp-2 hover:text-orange-500 transition">${m.titolo}</h3>
+                <p class="text-orange-500/70 text-[10px] uppercase font-black mt-1 tracking-widest">${m.artisti?.nome || 'Anonymous'}</p>
+                
+                <!-- Vote indicator -->
+                <div class="flex items-center gap-3 mt-2">
+                  <span class="vote-indicator">
+                    <i class="fas fa-arrow-up vote-up"></i>
+                    <span>${m.up_votes || 0}</span>
+                  </span>
+                  <span class="vote-indicator">
+                    <i class="fas fa-arrow-down vote-down"></i>
+                    <span>${m.down_votes || 0}</span>
+                  </span>
+                  <span class="vote-indicator">
+                    <i class="fas fa-chart-line text-orange-500"></i>
+                    <span>${score > 0 ? '+' : ''}${score}</span>
+                  </span>
+                </div>
+                
+                <!-- Time indicator -->
+                <div class="text-[8px] text-gray-700 mt-2 font-mono">
+                  ${timeAgo(new Date(m.created_at))}
+                </div>
+              </div>
+            </div>
+          `}).join('');
+      }
+
+      function timeAgo(date) {
+        const seconds = Math.floor((new Date() - date) / 1000);
+        
+        let interval = seconds / 31536000;
+        if (interval > 1) return Math.floor(interval) + ' years ago';
+        
+        interval = seconds / 2592000;
+        if (interval > 1) return Math.floor(interval) + ' months ago';
+        
+        interval = seconds / 86400;
+        if (interval > 1) return Math.floor(interval) + ' days ago';
+        
+        interval = seconds / 3600;
+        if (interval > 1) return Math.floor(interval) + ' hours ago';
+        
+        interval = seconds / 60;
+        if (interval > 1) return Math.floor(interval) + ' minutes ago';
+        
+        return Math.floor(seconds) + ' seconds ago';
+      }
+
+      function loadMore() {
+        currentPage++;
+        const end = currentPage * itemsPerPage;
+        displayManga(filteredManga.slice(0, end));
+        
+        if (end >= filteredManga.length) {
+          document.getElementById('load-more-container').classList.add('hidden');
+        }
+      }
+
+      // ============================================
+      // INITIALIZATION
+      // ============================================
+      window.addEventListener('load', () => {
+        loadAllManga();
+        loadLiveStats();
+        
+        // Refresh live stats every 10 seconds
+        setInterval(loadLiveStats, 10000);
+      });
+
+      // Global functions
+      window.filterByTime = filterByTime;
+      window.loadMore = loadMore;
+    </script>
+  </body>
+</html>
