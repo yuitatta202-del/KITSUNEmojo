@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
-    "module": "nodenext",
-    "moduleResolution": "nodenext",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
     "resolvePackageJsonExports": true,
     "esModuleInterop": true,
     "isolatedModules": true,
@@ -10,7 +10,7 @@
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
     "allowSyntheticDefaultImports": true,
-    "target": "ES2023",
+    "target": "ES2022",
     "sourceMap": true,
     "outDir": "./dist",
     "baseUrl": "./",
@@ -20,7 +20,23 @@
     "forceConsistentCasingInFileNames": true,
     "noImplicitAny": false,
     "strictBindCallApply": false,
-    "noFallthroughCasesInSwitch": false
+    "noFallthroughCasesInSwitch": false,
+    "allowJs": false,
+    "resolveJsonModule": true,
+    "lib": ["ES2023", "DOM"],
+    "paths": {
+      "@/*": ["src/*"],
+      "@auth/*": ["src/auth/*"],
+      "@supabase/*": ["src/supabase/*"],
+      "@admin/*": ["src/admin/*"],
+      "@import/*": ["src/import/*"]
+    },
+    "types": ["node", "jest"],
+    "typeRoots": ["./node_modules/@types", "./src/types"]
   },
-  "exclude": ["node_modules", "dist", "test", "**/*spec.ts"]
+  "include": ["src/**/*", "src/types/**/*.d.ts"],
+  "exclude": ["node_modules", "dist", "coverage", "**/*.spec.ts", "**/*.test.ts"],
+  "ts-node": {
+    "require": ["tsconfig-paths/register"]
+  }
 }

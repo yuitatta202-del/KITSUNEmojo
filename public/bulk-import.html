@@ -148,216 +148,239 @@
     // Determina l'URL base in base all'ambiente
     const BASE_URL = window.location.hostname === 'localhost' 
         ? 'http://localhost:3000'
-        : 'https://kitsun-emojo.vercel.app';  // ← SOSTITUISCI CON IL TUO URL RENDER
+        : 'https://kitsune-backend.onrender.com';
     
-    const API_URL = `${BASE_URL}/admin/bulk/ingest`;
+    // ✅ ENDPOINT AGGIORNATI CON I NUOVI MODULI
+    // Endpoint singolo (usa /admin/bulk/ingest o /import/single)
+    const SINGLE_IMPORT_URL = `${BASE_URL}/admin/bulk/ingest`;
+    // Endpoint multiplo (usa /admin/bulk o /import/bulk)
+    const BULK_IMPORT_URL = `${BASE_URL}/admin/bulk`;
+    // Endpoint alternativo (nuovo modulo import)
+    const IMPORT_SINGLE_URL = `${BASE_URL}/import/single`;
+    const IMPORT_BULK_URL = `${BASE_URL}/import/bulk`;
+    
     const AUTHORIZED_ADMINS = ['0x2aab3b9458cbb3709c6a131b1d9a7a0eb111efbc'.toLowerCase()];
     
     // Log per debug
     console.log('🌐 Environment:', window.location.hostname === 'localhost' ? 'development' : 'production');
     console.log('🌐 BASE_URL:', BASE_URL);
-    console.log('🌐 API_URL:', API_URL);
+    console.log('🌐 SINGLE_IMPORT_URL:', SINGLE_IMPORT_URL);
+    console.log('🌐 BULK_IMPORT_URL:', BULK_IMPORT_URL);
+    console.log('🌐 IMPORT_SINGLE_URL:', IMPORT_SINGLE_URL);
+    console.log('🌐 IMPORT_BULK_URL:', IMPORT_BULK_URL);
+    
+    // Scegli quale endpoint usare (cambia qui per testare)
+    const USE_NEW_IMPORT_MODULE = false; // Metti true per usare /import/single invece di /admin/bulk/ingest
+    const API_URL = USE_NEW_IMPORT_MODULE ? IMPORT_SINGLE_URL : SINGLE_IMPORT_URL;
         
-        let isRunning = false;
-        let userWallet = null;
-        let startTime = null;
-        let successCount = 0;
-        let failedCount = 0;
+    let isRunning = false;
+    let userWallet = null;
+    let startTime = null;
+    let successCount = 0;
+    let failedCount = 0;
 
-        async function connectWallet() {
-            if (window.ethereum) {
-                try {
-                    const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-                    userWallet = accounts[0].toLowerCase();
-                    
-                    document.getElementById('connect-wallet-btn').classList.add('hidden');
-                    document.getElementById('wallet-info').classList.remove('hidden');
-                    document.getElementById('wallet-address').innerText = userWallet.substring(0, 6) + '...' + userWallet.slice(-4);
-                    
-                    const isAdmin = AUTHORIZED_ADMINS.includes(userWallet);
-                    addLog(`[SYSTEM] Node Connesso: ${userWallet}`, isAdmin ? 'status-success' : 'status-warning');
-                    
-                    if (!isAdmin) {
-                        addLog(`[WARNING] Wallet non autorizzato all'import. Modalità read-only.`, 'status-warning');
-                    }
-                    
-                    // Ascolta cambi di account
-                    window.ethereum.on('accountsChanged', (accounts) => {
-                        if (accounts.length === 0) {
-                            disconnectWallet();
-                        } else {
-                            userWallet = accounts[0].toLowerCase();
-                            document.getElementById('wallet-address').innerText = userWallet.substring(0, 6) + '...' + userWallet.slice(-4);
-                        }
-                    });
-
-                } catch (err) {
-                    addLog(`[ERROR] Connessione wallet fallita: ${err.message}`, 'status-error');
+    async function connectWallet() {
+        if (window.ethereum) {
+            try {
+                const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+                userWallet = accounts[0].toLowerCase();
+                
+                document.getElementById('connect-wallet-btn').classList.add('hidden');
+                document.getElementById('wallet-info').classList.remove('hidden');
+                document.getElementById('wallet-address').innerText = userWallet.substring(0, 6) + '...' + userWallet.slice(-4);
+                
+                const isAdmin = AUTHORIZED_ADMINS.includes(userWallet);
+                addLog(`[SYSTEM] Node Connesso: ${userWallet}`, isAdmin ? 'status-success' : 'status-warning');
+                
+                if (!isAdmin) {
+                    addLog(`[WARNING] Wallet non autorizzato all'import. Modalità read-only.`, 'status-warning');
                 }
-            } else {
-                addLog(`[ERROR] MetaMask non rilevata. Installa MetaMask per continuare.`, 'status-error');
+                
+                // Ascolta cambi di account
+                window.ethereum.on('accountsChanged', (accounts) => {
+                    if (accounts.length === 0) {
+                        disconnectWallet();
+                    } else {
+                        userWallet = accounts[0].toLowerCase();
+                        document.getElementById('wallet-address').innerText = userWallet.substring(0, 6) + '...' + userWallet.slice(-4);
+                    }
+                });
+
+            } catch (err) {
+                addLog(`[ERROR] Connessione wallet fallita: ${err.message}`, 'status-error');
             }
+        } else {
+            addLog(`[ERROR] MetaMask non rilevata. Installa MetaMask per continuare.`, 'status-error');
+        }
+    }
+
+    function disconnectWallet() {
+        userWallet = null;
+        document.getElementById('connect-wallet-btn').classList.remove('hidden');
+        document.getElementById('wallet-info').classList.add('hidden');
+        addLog(`[SYSTEM] Wallet disconnesso`, 'status-info');
+    }
+
+    function updateCount() {
+        const lines = document.getElementById('url-input').value.split('\n').filter(l => l.trim().length > 10);
+        document.getElementById('url-count').innerText = `${lines.length} URL rilevati`;
+    }
+
+    function clearInput() {
+        document.getElementById('url-input').value = '';
+        updateCount();
+        addLog(`[SYSTEM] Input pulito`, 'status-info');
+    }
+
+    function addLog(msg, className = '') {
+        const terminal = document.getElementById('log-terminal');
+        const entry = document.createElement('div');
+        entry.className = `flex gap-3 ${className}`;
+        entry.innerHTML = `<span class="opacity-30 text-white">[${new Date().toLocaleTimeString()}]</span> <span>${msg}</span>`;
+        terminal.appendChild(entry);
+        terminal.scrollTop = terminal.scrollHeight;
+    }
+
+    function clearLogs() {
+        const terminal = document.getElementById('log-terminal');
+        terminal.innerHTML = '<div class="text-zinc-700 italic">// Logs cancellati</div>';
+        addLog(`[SYSTEM] Terminale pulito`, 'status-info');
+    }
+
+    function copyLogs() {
+        const terminal = document.getElementById('log-terminal');
+        const logs = Array.from(terminal.children)
+            .map(el => el.innerText)
+            .join('\n');
+        
+        navigator.clipboard.writeText(logs).then(() => {
+            addLog(`[SYSTEM] Log copiati negli appunti`, 'status-success');
+        }).catch(() => {
+            addLog(`[ERROR] Impossibile copiare i log`, 'status-error');
+        });
+    }
+
+    function updateStats() {
+        const total = successCount + failedCount;
+        document.getElementById('total-stats').innerText = total;
+        document.getElementById('success-stats').innerText = successCount;
+        document.getElementById('failed-stats').innerText = failedCount;
+        
+        if (startTime) {
+            const elapsed = Math.floor((Date.now() - startTime) / 1000);
+            const minutes = Math.floor(elapsed / 60);
+            const seconds = elapsed % 60;
+            document.getElementById('time-stats').innerText = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        }
+    }
+
+    async function startBulkProcess() {
+        if (isRunning) return;
+        
+        if (!userWallet) {
+            await connectWallet();
+            if (!userWallet) return;
         }
 
-        function disconnectWallet() {
-            userWallet = null;
-            document.getElementById('connect-wallet-btn').classList.remove('hidden');
-            document.getElementById('wallet-info').classList.add('hidden');
-            addLog(`[SYSTEM] Wallet disconnesso`, 'status-info');
+        if (!AUTHORIZED_ADMINS.includes(userWallet)) {
+            addLog(`[ACCESSO NEGATO] Wallet non autorizzato all'import`, 'status-error');
+            return;
+        }
+        
+        const input = document.getElementById('url-input');
+        const urls = input.value.split('\n')
+            .map(u => u.trim())
+            .filter(u => u.length > 10 && u.startsWith('http'));
+        
+        if (urls.length === 0) {
+            addLog("[ABORT] Nessun URL valido inserito", "status-error");
+            return;
         }
 
-        function updateCount() {
-            const lines = document.getElementById('url-input').value.split('\n').filter(l => l.trim().length > 10);
-            document.getElementById('url-count').innerText = `${lines.length} URL rilevati`;
-        }
+        // Reset stats
+        successCount = 0;
+        failedCount = 0;
+        startTime = Date.now();
+        updateStats();
 
-        function clearInput() {
-            document.getElementById('url-input').value = '';
-            updateCount();
-            addLog(`[SYSTEM] Input pulito`, 'status-info');
-        }
+        isRunning = true;
+        const btn = document.getElementById('import-btn');
+        btn.disabled = true;
+        btn.innerHTML = `<i class="fas fa-circle-notch animate-spin mr-2"></i> Ingestione in corso...`;
 
-        function addLog(msg, className = '') {
-            const terminal = document.getElementById('log-terminal');
-            const entry = document.createElement('div');
-            entry.className = `flex gap-3 ${className}`;
-            entry.innerHTML = `<span class="opacity-30 text-white">[${new Date().toLocaleTimeString()}]</span> <span>${msg}</span>`;
-            terminal.appendChild(entry);
-            terminal.scrollTop = terminal.scrollHeight;
-        }
+        addLog(`[START] Avvio batch di ${urls.length} elementi`, "status-info");
+        addLog(`[ENDPOINT] Utilizzo: ${API_URL}`, "status-info");
 
-        function clearLogs() {
-            const terminal = document.getElementById('log-terminal');
-            terminal.innerHTML = '<div class="text-zinc-700 italic">// Logs cancellati</div>';
-            addLog(`[SYSTEM] Terminale pulito`, 'status-info');
-        }
-
-        function copyLogs() {
-            const terminal = document.getElementById('log-terminal');
-            const logs = Array.from(terminal.children)
-                .map(el => el.innerText)
-                .join('\n');
+        for (let i = 0; i < urls.length; i++) {
+            const url = urls[i];
+            document.getElementById('progress-bar').innerText = `PROCESSING ${i + 1}/${urls.length}`;
             
-            navigator.clipboard.writeText(logs).then(() => {
-                addLog(`[SYSTEM] Log copiati negli appunti`, 'status-success');
-            }).catch(() => {
-                addLog(`[ERROR] Impossibile copiare i log`, 'status-error');
-            });
-        }
-
-        function updateStats() {
-            const total = successCount + failedCount;
-            document.getElementById('total-stats').innerText = total;
-            document.getElementById('success-stats').innerText = successCount;
-            document.getElementById('failed-stats').innerText = failedCount;
+            addLog(`[FETCH] Analisi asset ${i + 1}: ${url.substring(0, 50)}...`);
             
-            if (startTime) {
-                const elapsed = Math.floor((Date.now() - startTime) / 1000);
-                const minutes = Math.floor(elapsed / 60);
-                const seconds = elapsed % 60;
-                document.getElementById('time-stats').innerText = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'x-wallet': userWallet 
+                    },
+                    body: JSON.stringify({ url })
+                });
+
+                const result = await response.json();
+                console.log('📦 Risposta:', result);
+
+                if (response.ok && result.success) {
+                    successCount++;
+                    addLog(`[DONE] ✅ ${result.title || 'Senza titolo'} (ID: ${result.id})`, 'status-success');
+                } else {
+                    failedCount++;
+                    const errorMsg = result.error || result.message || 'Errore sconosciuto';
+                    addLog(`[FAIL] ❌ ${url.substring(0, 50)}... - ${errorMsg}`, 'status-error');
+                }
+            } catch (err) {
+                failedCount++;
+                addLog(`[CRITIC] 🔴 Errore di connessione: ${err.message}`, 'status-error');
             }
-        }
 
-        async function startBulkProcess() {
-            if (isRunning) return;
-            
-            if (!userWallet) {
-                await connectWallet();
-                if (!userWallet) return;
-            }
-
-            if (!AUTHORIZED_ADMINS.includes(userWallet)) {
-                addLog(`[ACCESSO NEGATO] Wallet non autorizzato all'import`, 'status-error');
-                return;
-            }
-            
-            const input = document.getElementById('url-input');
-            const urls = input.value.split('\n')
-                .map(u => u.trim())
-                .filter(u => u.length > 10 && u.startsWith('http'));
-            
-            if (urls.length === 0) {
-                addLog("[ABORT] Nessun URL valido inserito", "status-error");
-                return;
-            }
-
-            // Reset stats
-            successCount = 0;
-            failedCount = 0;
-            startTime = Date.now();
             updateStats();
 
-            isRunning = true;
-            const btn = document.getElementById('import-btn');
-            btn.disabled = true;
-            btn.innerHTML = `<i class="fas fa-circle-notch animate-spin mr-2"></i> Ingestione in corso...`;
-
-            addLog(`[START] Avvio batch di ${urls.length} elementi`, "status-info");
-
-            for (let i = 0; i < urls.length; i++) {
-                const url = urls[i];
-                document.getElementById('progress-bar').innerText = `PROCESSING ${i + 1}/${urls.length}`;
-                
-                addLog(`[FETCH] Analisi asset ${i + 1}...`);
-                
-                try {
-                    const response = await fetch(API_URL, {
-                        method: 'POST',
-                        headers: { 
-                            'Content-Type': 'application/json',
-                            'x-wallet': userWallet 
-                        },
-                        body: JSON.stringify({ url })
-                    });
-
-                    const result = await response.json();
-
-                    if (response.ok && result.success) {
-                        successCount++;
-                        addLog(`[DONE] ${result.title || 'Senza titolo'} sincronizzato con successo (ID: ${result.id})`, 'status-success');
-                    } else {
-                        failedCount++;
-                        addLog(`[FAIL] ${url}: ${result.error || 'Errore sconosciuto'}`, 'status-error');
-                    }
-                } catch (err) {
-                    failedCount++;
-                    addLog(`[CRITIC] Errore di connessione: ${err.message}`, 'status-error');
-                }
-
-                updateStats();
-
-                // Delay per evitare rate limiting
-                await new Promise(resolve => setTimeout(resolve, 1500));
-            }
-
-            addLog(`[FINISH] Operazione completata - Successi: ${successCount}, Falliti: ${failedCount}`, 'status-info');
-            
-            isRunning = false;
-            btn.disabled = false;
-            btn.innerHTML = `Esegui Sincronizzazione`;
-            document.getElementById('progress-bar').innerText = `IDLE`;
-            startTime = null;
+            // Delay per evitare rate limiting
+            await new Promise(resolve => setTimeout(resolve, 1500));
         }
 
-        // Auto-connect e caricamento URL pendenti
-        window.addEventListener('load', async () => {
-            if (window.ethereum && window.ethereum.selectedAddress) {
-                await connectWallet();
-            } else {
-                addLog("[SYSTEM] In attesa di connessione wallet...", "status-info");
-            }
-            
-            // Recupera gli URL passati dalla dashboard
-            const pending = localStorage.getItem('kitsune_pending_urls');
-            if (pending) {
-                const textarea = document.getElementById('url-input');
-                textarea.value = pending;
-                localStorage.removeItem('kitsune_pending_urls');
-                updateCount();
-                addLog("[SYSTEM] URL importati dalla dashboard principale. Pronto per l'esecuzione.", "status-info");
-            }
-        });
+        addLog(`[FINISH] ✅ Operazione completata - Successi: ${successCount}, Falliti: ${failedCount}`, successCount > 0 ? 'status-success' : 'status-info');
+        
+        isRunning = false;
+        btn.disabled = false;
+        btn.innerHTML = `Esegui Sincronizzazione`;
+        document.getElementById('progress-bar').innerText = `IDLE`;
+        startTime = null;
+    }
+
+    // Auto-connect e caricamento URL pendenti
+    window.addEventListener('load', async () => {
+        // Prova a connettere il wallet automaticamente se già autorizzato
+        if (window.ethereum && window.ethereum.selectedAddress) {
+            await connectWallet();
+        } else {
+            addLog("[SYSTEM] In attesa di connessione wallet...", "status-info");
+        }
+        
+        // Recupera gli URL passati dalla dashboard
+        const pending = localStorage.getItem('kitsune_pending_urls');
+        if (pending) {
+            const textarea = document.getElementById('url-input');
+            textarea.value = pending;
+            localStorage.removeItem('kitsune_pending_urls');
+            updateCount();
+            addLog("[SYSTEM] 📋 URL importati dalla dashboard principale. Pronto per l'esecuzione.", "status-info");
+        }
+        
+        // Mostra quale endpoint stiamo usando
+        addLog(`[CONFIG] Endpoint: ${API_URL}`, "status-info");
+        addLog(`[CONFIG] Modulo import: ${USE_NEW_IMPORT_MODULE ? 'NUOVO (/import)' : 'VECCHIO (/admin/bulk)'}`, "status-info");
+    });
     </script>
 </body>
 </html>

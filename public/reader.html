@@ -1,15 +1,18 @@
 <!doctype html>
 <html lang="it">
 <head>
-    <!-- Google tag (gtag.js) -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-J3D0Z5V0RZ"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
+         <!-- Meta tag exoclick -->
+    <meta name="6a97888e-site-verification" content="86cedfa6aeb1cfa2ee94bb96f9934555">
+        <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🦊</text></svg>">
 
-  gtag('config', 'G-J3D0Z5V0RZ');
-</script>
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-J3D0Z5V0RZ"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-J3D0Z5V0RZ');
+    </script>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Kitsune Mojo | Node Reader</title>
@@ -247,11 +250,100 @@
                 margin-top: 1rem;
             }
         }
+
+        /* Comment styles */
+        .comment {
+            transition: all 0.2s ease;
+        }
+        .comment:hover {
+            border-color: rgba(246, 133, 27, 0.3);
+        }
+        #mention-suggestions {
+            position: absolute;
+            background: #1a1a1a;
+            border: 1px solid #333;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 1000;
+        }
+        .mention-item {
+            padding: 8px 12px;
+            cursor: pointer;
+            border-bottom: 1px solid #333;
+        }
+        .mention-item:hover {
+            background: #333;
+        }
+        .mention-item:last-child {
+            border-bottom: none;
+        }
+        .prose a {
+            color: #f6851b;
+            text-decoration: none;
+        }
+        .prose a:hover {
+            text-decoration: underline;
+        }
+        
+        /* Loading spinner for comments */
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(246, 133, 27, 0.3);
+            border-radius: 50%;
+            border-top-color: #f6851b;
+            animation: spin 1s ease-in-out infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        /* Connection status indicator */
+        .connection-status {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            background: #0a0a0a;
+            border: 1px solid #1f2937;
+            border-radius: 30px;
+            padding: 0.5rem 1rem;
+            font-size: 0.7rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            z-index: 100;
+            opacity: 0.8;
+            backdrop-filter: blur(5px);
+        }
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #f6851b;
+            animation: pulse 2s infinite;
+        }
+        .status-dot.connected {
+            background: #10b981;
+            animation: none;
+        }
+        .status-dot.disconnected {
+            background: #ef4444;
+            animation: none;
+        }
     </style>
 </head>
 <body>
 
     <div id="progress-bar" class="progress-bar" style="width: 0%"></div>
+
+    <!-- Connection Status Indicator (NOVITÀ) -->
+    <div id="connection-status" class="connection-status hidden">
+        <div id="status-dot" class="status-dot"></div>
+        <span id="status-text" class="text-gray-400">Connecting...</span>
+    </div>
 
     <!-- NAVBAR (identica a index.html) -->
     <nav class="glass-nav sticky top-0 z-50 px-6 py-4">
@@ -404,6 +496,70 @@
         </div>
     </div>
 
+    <!-- COMMENTS SECTION (POSIZIONE CORRETTA) -->
+    <div class="max-w-4xl mx-auto mt-12 px-4">
+        <div class="border-t border-gray-800 pt-8">
+            <h3 class="text-xl font-black uppercase tracking-tighter mb-6 flex items-center gap-2">
+                <i class="fas fa-comments text-orange-500"></i>
+                Discussion <span class="text-gray-600 text-sm font-normal">(be respectful)</span>
+            </h3>
+
+            <!-- Comment Form -->
+            <div id="comment-form-container" class="mb-8" style="opacity: 1;">
+                <div class="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-4">
+                    <div class="flex gap-4">
+                        <div class="w-10 h-10 rounded-full bg-zinc-800 flex items-center justify-center flex-shrink-0">
+                            <i class="fas fa-user text-gray-600"></i>
+                        </div>
+                        <div class="flex-1">
+                            <div id="mention-suggestions" class="hidden absolute bg-zinc-900 border border-zinc-800 rounded-xl shadow-2xl max-h-48 overflow-y-auto w-64 z-50"></div>
+                            <textarea
+                                id="comment-input"
+                                rows="3"
+                                placeholder="Share your thoughts... (use @ to mention manga)"
+                                class="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-3 text-sm text-white placeholder-gray-600 focus:border-orange-500 focus:outline-none resize-none"
+                                oninput="handleCommentInput(event)"
+                            ></textarea>
+                            <div class="flex justify-between items-center mt-3">
+                                <div class="text-xs text-gray-600">
+                                    <i class="fas fa-at mr-1"></i> Type @ to mention a manga
+                                </div>
+                                <button
+                                    id="submit-comment"
+                                    onclick="submitComment()"
+                                    class="bg-orange-600 hover:bg-orange-500 text-white px-6 py-2 rounded-xl text-sm font-bold transition disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    Post Comment
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Comments Loading Indicator (NOVITÀ) -->
+            <div id="comments-loading" class="text-center py-8 hidden">
+                <div class="loading-spinner mx-auto mb-3"></div>
+                <p class="text-xs text-gray-600 font-mono uppercase tracking-wider">Loading comments...</p>
+            </div>
+
+            <!-- Comments List -->
+            <div id="comments-list" class="space-y-6">
+                <div class="text-center py-12 text-gray-600">
+                    <i class="fas fa-comment-dots text-4xl mb-4 opacity-30"></i>
+                    <p class="text-sm">Loading comments...</p>
+                </div>
+            </div>
+
+            <!-- Load More Comments -->
+            <div id="load-more-comments" class="text-center mt-8 hidden">
+                <button onclick="loadMoreComments()" class="filter-tab bg-zinc-900 border border-zinc-800 px-6 py-3 rounded-full text-xs font-mono hover:border-orange-500 transition">
+                    <i class="fas fa-spinner mr-2"></i> Load More Comments
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- READER CONTAINER -->
     <main id="reader" class="px-4 pb-12 flex flex-col items-center">
         <div id="loading-state" class="py-40 text-center">
@@ -425,25 +581,64 @@
 
     <script>
         // ============================================
-// CONFIGURAZIONE - Versione produzione
-// ============================================
+        // CONFIGURAZIONE - Versione produzione CORRETTA
+        // ============================================
 
-// Determina l'URL base in base all'ambiente
-const BASE_URL = window.location.hostname === 'localhost' 
-  ? 'http://localhost:3000' 
-  : 'https://kitsun-emojo.vercel.app';  // ← IL TUO URL RENDER (cambialo con quello che avrai)
+        // Determina l'URL base in base all'ambiente
+        const BASE_URL = window.location.hostname === 'localhost' 
+            ? 'http://localhost:3000' 
+            : 'https://kitsune-backend.onrender.com';  // ← URL CORRETTO DEL BACKEND
 
-const PROXY_URL = `${BASE_URL}/admin/proxy?url=`;
-const API_URL = `${BASE_URL}/admin`;
-const READER_API = `${BASE_URL}/reader`;
+        const PROXY_URL = `${BASE_URL}/admin/proxy?url=`;
+        const API_URL = `${BASE_URL}/admin`;
+        const READER_API = `${BASE_URL}/reader`;
+        const COMMENTS_API = `${BASE_URL}/comments`;
 
-const params = new URLSearchParams(window.location.search);
-const mangaId = params.get('id');
+        const params = new URLSearchParams(window.location.search);
+        const mangaId = params.get('id');
 
-// Log per debug (rimuovere in produzione)
-console.log('🔧 Environment:', window.location.hostname === 'localhost' ? 'development' : 'production');
-console.log('🔧 BASE_URL:', BASE_URL);
-console.log('🔧 mangaId:', mangaId);
+        // Log per debug
+        console.log('🔧 Environment:', window.location.hostname === 'localhost' ? 'development' : 'production');
+        console.log('🔧 BASE_URL:', BASE_URL);
+        console.log('🔧 mangaId:', mangaId);
+
+        // ============================================
+        // VERIFICA CONNESSIONE BACKEND (NOVITÀ)
+        // ============================================
+        async function checkBackendConnection() {
+            const statusEl = document.getElementById('connection-status');
+            const statusDot = document.getElementById('status-dot');
+            const statusText = document.getElementById('status-text');
+            
+            if (!statusEl || !statusDot || !statusText) return;
+            
+            statusEl.classList.remove('hidden');
+            
+            try {
+                const res = await fetch(`${BASE_URL}/api/status`);
+                if (res.ok) {
+                    console.log('✅ Backend connected');
+                    statusDot.className = 'status-dot connected';
+                    statusText.innerText = 'Backend Online';
+                    statusText.className = 'text-green-500';
+                    
+                    // Nascondi dopo 3 secondi
+                    setTimeout(() => {
+                        statusEl.classList.add('hidden');
+                    }, 3000);
+                } else {
+                    console.warn('⚠️ Backend returned:', res.status);
+                    statusDot.className = 'status-dot disconnected';
+                    statusText.innerText = 'Backend Error';
+                    statusText.className = 'text-red-500';
+                }
+            } catch (err) {
+                console.error('❌ Backend connection failed:', err);
+                statusDot.className = 'status-dot disconnected';
+                statusText.innerText = 'Backend Offline';
+                statusText.className = 'text-red-500';
+            }
+        }
 
         // ============================================
         // STATO GLOBALE
@@ -607,20 +802,6 @@ console.log('🔧 mangaId:', mangaId);
         // ============================================
         // BOOKMARK FUNCTIONS
         // ============================================
-        /**
-         * COME FUNZIONANO I BOOKMARK:
-         * 
-         * 1. Quando leggi un manga, il progresso viene automaticamente salvato
-         * 2. I bookmark sono salvati nel database (tabella 'bookmarks')
-         * 3. Quando riapri un manga, riparti dall'ultima pagina letta
-         * 4. Puoi vedere tutti i tuoi bookmark in una pagina dedicata
-         * 
-         * Endpoints:
-         * - GET    /reader/manga/:id/progress  - Ottieni progresso
-         * - POST   /reader/manga/:id/progress  - Salva progresso
-         * - GET    /reader/bookmarks           - Lista tutti i bookmark
-         */
-
         async function loadBookmark() {
             if (!mangaId || !userWallet) return;
             
@@ -730,7 +911,7 @@ console.log('🔧 mangaId:', mangaId);
         const titleEl = document.getElementById('manga-title');
         const artistCard = document.getElementById('artist-card');
         const artistName = document.getElementById('artist-name');
-        const totalPages = document.getElementById('total-pages');
+        const totalPagesEl = document.getElementById('total-pages');
         const langBadge = document.getElementById('lang-badge');
         const catBadge = document.getElementById('cat-badge');
         const tagCount = document.getElementById('tag-count');
@@ -849,7 +1030,7 @@ console.log('🔧 mangaId:', mangaId);
                 langBadge.innerText = (manga.lingua || 'JP').toUpperCase();
                 
                 // Aggiorna pagine
-                totalPages.innerText = manga.numero_pagine || '0';
+                totalPagesEl.innerText = manga.numero_pagine || '0';
                 totalPagesCount = manga.numero_pagine || 0;
                 
                 // GESTIONE ROBUSTA DI ARTISTA
@@ -992,15 +1173,420 @@ console.log('🔧 mangaId:', mangaId);
         }
 
         // ============================================
-        // INITIALIZATION
+        // COMMENTS SYSTEM
+        // ============================================
+        let commentsState = {
+            page: 1,
+            total: 0,
+            hasMore: false,
+            mentionSuggestions: [],
+            mentionPosition: null,
+            mentionQuery: '',
+            currentMentionIndex: -1,
+            isLoading: false
+        };
+
+        // Carica commenti (MODIFICATO con loading indicator)
+        async function loadComments(page = 1) {
+            if (!mangaId) return;
+            
+            const loadingEl = document.getElementById('comments-loading');
+            const commentsList = document.getElementById('comments-list');
+            
+            if (!commentsList) return;
+            
+            // Mostra loading indicator
+            if (loadingEl) loadingEl.classList.remove('hidden');
+            commentsState.isLoading = true;
+
+            try {
+                const url = `${COMMENTS_API}/manga/${mangaId}?page=${page}&limit=20${userWallet ? `&wallet=${userWallet}` : ''}`;
+                const res = await fetch(url);
+                
+                if (res.ok) {
+                    const data = await res.json();
+                    renderComments(data.comments, page === 1);
+                    
+                    commentsState.total = data.total;
+                    commentsState.hasMore = data.comments && data.comments.length === 20;
+                    commentsState.page = page;
+                    
+                    const loadMoreBtn = document.getElementById('load-more-comments');
+                    if (loadMoreBtn) {
+                        if (commentsState.hasMore) {
+                            loadMoreBtn.classList.remove('hidden');
+                        } else {
+                            loadMoreBtn.classList.add('hidden');
+                        }
+                    }
+                }
+            } catch (err) {
+                console.error('Error loading comments:', err);
+                if (page === 1) {
+                    commentsList.innerHTML = `
+                        <div class="text-center py-12 text-gray-600">
+                            <i class="fas fa-exclamation-triangle text-4xl mb-4 opacity-30"></i>
+                            <p class="text-sm">Error loading comments. Please try again.</p>
+                        </div>
+                    `;
+                }
+            } finally {
+                // Nascondi loading indicator
+                if (loadingEl) loadingEl.classList.add('hidden');
+                commentsState.isLoading = false;
+            }
+        }
+
+        // Renderizza commenti
+        function renderComments(comments, replace = true) {
+            const container = document.getElementById('comments-list');
+            if (!container) return;
+            
+            if (!comments || comments.length === 0) {
+                if (replace) {
+                    container.innerHTML = `
+                        <div class="text-center py-12 text-gray-600">
+                            <i class="fas fa-comment-dots text-4xl mb-4 opacity-30"></i>
+                            <p class="text-sm">No comments yet. Be the first to share your thoughts!</p>
+                        </div>
+                    `;
+                }
+                return;
+            }
+
+            const commentsHtml = comments.map(comment => renderComment(comment)).join('');
+            
+            if (replace) {
+                container.innerHTML = commentsHtml;
+            } else {
+                container.innerHTML += commentsHtml;
+            }
+        }
+
+        // Renderizza singolo commento
+        function renderComment(comment) {
+            const timeAgo = getTimeAgo(new Date(comment.created_at));
+            const userVote = comment.user_vote;
+            const score = (comment.up_votes || 0) - (comment.down_votes || 0);
+            const isAuthor = userWallet && userWallet === comment.user_wallet;
+            
+            // Processa menzioni nel testo
+            let content = comment.content;
+            if (comment.mentioned_manga && comment.mentioned_manga.length) {
+                comment.mentioned_manga.forEach(manga => {
+                    const regex = new RegExp(`@${manga.mangaId}`, 'g');
+                    content = content.replace(regex, `<a href="/reader.html?id=${manga.mangaId}" class="text-orange-500 hover:underline font-bold">@${manga.mangaTitle}</a>`);
+                });
+            }
+
+            return `
+                <div class="comment bg-zinc-900/30 border border-zinc-800 rounded-2xl p-6" data-comment-id="${comment.id}">
+                    <div class="flex gap-4">
+                        <div class="w-10 h-10 rounded-full bg-zinc-800 flex items-center justify-center flex-shrink-0">
+                            <i class="fas fa-user text-gray-600"></i>
+                        </div>
+                        <div class="flex-1">
+                            <div class="flex items-center gap-3 mb-2">
+                                <span class="font-mono text-xs text-orange-500">${shortenWallet(comment.user_wallet)}</span>
+                                <span class="text-[10px] text-gray-600">•</span>
+                                <span class="text-[10px] text-gray-600">${timeAgo}</span>
+                                ${comment.is_edited ? '<span class="text-[8px] text-gray-700 italic">(edited)</span>' : ''}
+                            </div>
+                            
+                            <div class="text-sm text-gray-300 mb-4 prose prose-invert max-w-none">
+                                ${content}
+                            </div>
+                            
+                            <div class="flex items-center gap-4">
+                                <!-- Vote buttons -->
+                                <div class="flex items-center gap-2">
+                                    <button onclick="voteComment(${comment.id}, 'up')" 
+                                            class="text-xs ${userVote === 'up' ? 'text-green-500' : 'text-gray-600 hover:text-green-500'} transition">
+                                        <i class="fas fa-arrow-up"></i>
+                                    </button>
+                                    <span class="text-xs font-mono ${score > 0 ? 'text-green-500' : score < 0 ? 'text-red-500' : 'text-gray-500'}">${score}</span>
+                                    <button onclick="voteComment(${comment.id}, 'down')" 
+                                            class="text-xs ${userVote === 'down' ? 'text-red-500' : 'text-gray-600 hover:text-red-500'} transition">
+                                        <i class="fas fa-arrow-down"></i>
+                                    </button>
+                                </div>
+                                
+                                <!-- Reply button -->
+                                <button onclick="showReplyForm(${comment.id})" class="text-xs text-gray-600 hover:text-orange-500 transition">
+                                    <i class="fas fa-reply mr-1"></i> Reply
+                                </button>
+                                
+                                <!-- Reply count -->
+                                ${comment.reply_count > 0 ? `
+                                    <button onclick="toggleReplies(${comment.id})" class="text-xs text-gray-600 hover:text-orange-500 transition">
+                                        <i class="fas fa-chevron-down mr-1"></i> ${comment.reply_count} ${comment.reply_count === 1 ? 'reply' : 'replies'}
+                                    </button>
+                                ` : ''}
+                                
+                                <!-- Edit/Delete for author -->
+                                ${isAuthor ? `
+                                    <button onclick="editComment(${comment.id})" class="text-xs text-gray-600 hover:text-blue-500 transition ml-auto">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button onclick="deleteComment(${comment.id})" class="text-xs text-gray-600 hover:text-red-500 transition">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                ` : ''}
+                            </div>
+                            
+                            <!-- Replies container -->
+                            <div id="replies-${comment.id}" class="replies-container hidden mt-4 ml-8 space-y-4"></div>
+                            
+                            <!-- Reply form (hidden by default) -->
+                            <div id="reply-form-${comment.id}" class="reply-form hidden mt-4"></div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Gestione input per menzioni
+        function handleCommentInput(event) {
+            const textarea = event.target;
+            const cursorPos = textarea.selectionStart;
+            const text = textarea.value;
+            
+            // Cerca @ prima del cursore
+            const textBeforeCursor = text.substring(0, cursorPos);
+            const atIndex = textBeforeCursor.lastIndexOf('@');
+            
+            if (atIndex !== -1 && (atIndex === 0 || textBeforeCursor[atIndex - 1] === ' ')) {
+                const query = textBeforeCursor.substring(atIndex + 1);
+                if (query.length >= 1) {
+                    showMentionSuggestions(query, textarea, atIndex);
+                    return;
+                }
+            }
+            
+            hideMentionSuggestions();
+        }
+
+        // Mostra suggerimenti menzioni
+        async function showMentionSuggestions(query, textarea, atIndex) {
+            try {
+                const res = await fetch(`${COMMENTS_API}/search-manga?q=${encodeURIComponent(query)}&limit=5`);
+                const suggestions = await res.json();
+                
+                if (suggestions.length === 0) {
+                    hideMentionSuggestions();
+                    return;
+                }
+                
+                const rect = textarea.getBoundingClientRect();
+                const suggestionsEl = document.getElementById('mention-suggestions');
+                if (!suggestionsEl) return;
+                
+                suggestionsEl.innerHTML = suggestions.map((manga, index) => `
+                    <div class="mention-item p-2 hover:bg-zinc-800 cursor-pointer flex items-center gap-2 ${index === commentsState.currentMentionIndex ? 'bg-zinc-800' : ''}"
+                         onclick="insertMention(${manga.id}, '${manga.titolo.replace(/'/g, "\\'")}', ${atIndex})">
+                        <img src="${PROXY_URL}${encodeURIComponent(manga.immagine || '')}" class="w-6 h-8 object-cover rounded">
+                        <span class="text-sm truncate">${manga.titolo}</span>
+                    </div>
+                `).join('');
+                
+                suggestionsEl.style.top = rect.bottom + window.scrollY + 5 + 'px';
+                suggestionsEl.style.left = rect.left + window.scrollX + 'px';
+                suggestionsEl.classList.remove('hidden');
+                
+                commentsState.mentionSuggestions = suggestions;
+                commentsState.mentionPosition = atIndex;
+            } catch (err) {
+                console.error('Error fetching suggestions:', err);
+            }
+        }
+
+        // Inserisci menzione
+        function insertMention(mangaId, mangaTitle, atIndex) {
+            const textarea = document.getElementById('comment-input');
+            if (!textarea) return;
+            
+            const text = textarea.value;
+            
+            // Sostituisci dalla @ fino al cursore
+            const textBeforeAt = text.substring(0, atIndex);
+            const textAfterCursor = text.substring(textarea.selectionStart);
+            
+            textarea.value = `${textBeforeAt}@${mangaId} ${textAfterCursor}`;
+            hideMentionSuggestions();
+            
+            // Aggiorna array delle menzioni nel commento
+            if (!window.mentionedMangaIds) window.mentionedMangaIds = [];
+            window.mentionedMangaIds.push(mangaId);
+            
+            textarea.focus();
+        }
+
+        // Nascondi suggerimenti
+        function hideMentionSuggestions() {
+            const suggestionsEl = document.getElementById('mention-suggestions');
+            if (suggestionsEl) {
+                suggestionsEl.classList.add('hidden');
+            }
+            commentsState.currentMentionIndex = -1;
+        }
+
+        // Invia commento
+        async function submitComment() {
+            if (!userWallet) {
+                alert('Connect wallet to comment');
+                return;
+            }
+            
+            const textarea = document.getElementById('comment-input');
+            if (!textarea) return;
+            
+            const content = textarea.value.trim();
+            
+            if (!content) {
+                alert('Comment cannot be empty');
+                return;
+            }
+            
+            // Estrai ID manga menzionati
+            const mentionRegex = /@(\d+)/g;
+            const matches = [...content.matchAll(mentionRegex)];
+            const mentionedMangaIds = matches.map(m => parseInt(m[1]));
+            
+            try {
+                const res = await fetch(`${COMMENTS_API}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-wallet': userWallet
+                    },
+                    body: JSON.stringify({
+                        mangaId: parseInt(mangaId),
+                        content: content,
+                        mentionedMangaIds: mentionedMangaIds
+                    })
+                });
+                
+                if (res.ok) {
+                    textarea.value = '';
+                    window.mentionedMangaIds = [];
+                    await loadComments(1); // Ricarica commenti
+                } else {
+                    const error = await res.json();
+                    alert('Error posting comment: ' + (error.message || 'Unknown error'));
+                }
+            } catch (err) {
+                console.error('Error posting comment:', err);
+                alert('Failed to post comment');
+            }
+        }
+
+        // Vota commento
+        async function voteComment(commentId, voteType) {
+            if (!userWallet) {
+                alert('Connect wallet to vote');
+                return;
+            }
+            
+            try {
+                const res = await fetch(`${COMMENTS_API}/${commentId}/vote`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-wallet': userWallet
+                    },
+                    body: JSON.stringify({ voteType })
+                });
+                
+                if (res.ok) {
+                    const data = await res.json();
+                    // Aggiorna UI locale
+                    location.reload(); // Ricarica per semplicità
+                }
+            } catch (err) {
+                console.error('Error voting comment:', err);
+            }
+        }
+
+        // Funzioni helper per commenti
+        function showReplyForm(commentId) {
+            alert('Reply functionality coming soon');
+        }
+
+        function toggleReplies(commentId) {
+            const repliesContainer = document.getElementById(`replies-${commentId}`);
+            if (repliesContainer) {
+                if (repliesContainer.classList.contains('hidden')) {
+                    repliesContainer.classList.remove('hidden');
+                    // Carica risposte
+                } else {
+                    repliesContainer.classList.add('hidden');
+                }
+            }
+        }
+
+        function editComment(commentId) {
+            alert('Edit functionality coming soon');
+        }
+
+        function deleteComment(commentId) {
+            alert('Delete functionality coming soon');
+        }
+
+        // Helper: abbrevia wallet
+        function shortenWallet(wallet) {
+            if (!wallet) return 'Anonymous';
+            return wallet.substring(0, 6) + '...' + wallet.slice(-4);
+        }
+
+        // Helper: time ago
+        function getTimeAgo(date) {
+            const seconds = Math.floor((new Date() - date) / 1000);
+            const intervals = {
+                year: 31536000,
+                month: 2592000,
+                week: 604800,
+                day: 86400,
+                hour: 3600,
+                minute: 60
+            };
+            
+            for (const [unit, secondsInUnit] of Object.entries(intervals)) {
+                const interval = Math.floor(seconds / secondsInUnit);
+                if (interval >= 1) {
+                    return interval + ' ' + unit + (interval === 1 ? '' : 's') + ' ago';
+                }
+            }
+            return 'just now';
+        }
+
+        // Carica più commenti
+        function loadMoreComments() {
+            loadComments(commentsState.page + 1);
+        }
+
+        // ============================================
+        // INITIALIZATION (MODIFICATO)
         // ============================================
         window.addEventListener('load', () => {
+            checkBackendConnection(); // NOVITÀ: verifica connessione
             loadManga();
+            if (mangaId) {
+                setTimeout(() => loadComments(1), 1000);
+            }
         });
 
         // Esponi funzioni globali
         window.connectWallet = connectWallet;
         window.handleVote = handleVote;
+        window.handleCommentInput = handleCommentInput;
+        window.submitComment = submitComment;
+        window.voteComment = voteComment;
+        window.loadMoreComments = loadMoreComments;
+        window.showReplyForm = showReplyForm;
+        window.toggleReplies = toggleReplies;
+        window.editComment = editComment;
+        window.deleteComment = deleteComment;
+        window.insertMention = insertMention;
     </script>
 </body>
 </html>

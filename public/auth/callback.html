@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Authentication - Kitsune Mojo</title>
+  <style>
+    body {
+      background: #050505;
+      color: white;
+      font-family: sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+    .container {
+      text-align: center;
+    }
+    .loader {
+      border: 3px solid #1f2937;
+      border-top: 3px solid #f6851b;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+      margin: 20px auto;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="loader"></div>
+    <h2>Completing login...</h2>
+    <p style="color: #888;">You will be redirected automatically</p>
+  </div>
+  
+  <script>
+    (function() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const token = urlParams.get('token');
+      const error = urlParams.get('error');
+      
+      if (token) {
+        // Salva token e avvisa la finestra principale
+        localStorage.setItem('authToken', token);
+        
+        if (window.opener) {
+          window.opener.postMessage({ 
+            type: 'GOOGLE_LOGIN_SUCCESS', 
+            token: token 
+          }, '*');
+          setTimeout(() => window.close(), 1500);
+        } else {
+          // Se non c'è opener, redirect alla home
+          setTimeout(() => {
+            window.location.href = '/';
+          }, 1500);
+        }
+      } else if (error) {
+        document.body.innerHTML = `
+          <div class="container">
+            <h2 style="color: #ef4444;">Login Failed</h2>
+            <p style="color: #888;">${error}</p>
+            <button onclick="window.close()" style="background: #f6851b; border: none; color: black; padding: 10px 20px; border-radius: 8px; margin-top: 20px; cursor: pointer;">
+              Close Window
+            </button>
+          </div>
+        `;
+      }
+    })();
+  </script>
+</body>
+</html>

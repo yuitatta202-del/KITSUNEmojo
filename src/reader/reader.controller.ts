@@ -42,7 +42,10 @@ export class ReaderController {
    * Ottieni lo stato dei voti per un manga
    */
   @Get('manga/:id/votes')
-  async getVotes(@Param('id') id: string, @Headers('x-wallet') wallet?: string) {
+  async getVotes(
+    @Param('id') id: string,
+    @Headers('x-wallet') wallet?: string,
+  ) {
     const mangaId = parseInt(id, 10);
     if (isNaN(mangaId)) {
       throw new HttpException('ID non valido', HttpStatus.BAD_REQUEST);
@@ -80,7 +83,10 @@ export class ReaderController {
    * Rimuovi il voto da un manga
    */
   @Delete('manga/:id/vote')
-  async removeVote(@Param('id') id: string, @Headers('x-wallet') wallet: string) {
+  async removeVote(
+    @Param('id') id: string,
+    @Headers('x-wallet') wallet: string,
+  ) {
     if (!wallet) {
       throw new HttpException('Wallet richiesto', HttpStatus.UNAUTHORIZED);
     }
@@ -128,7 +134,10 @@ export class ReaderController {
    * Ottieni il progresso di lettura
    */
   @Get('manga/:id/progress')
-  async getProgress(@Param('id') id: string, @Headers('x-wallet') wallet: string) {
+  async getProgress(
+    @Param('id') id: string,
+    @Headers('x-wallet') wallet: string,
+  ) {
     if (!wallet) {
       throw new HttpException('Wallet richiesto', HttpStatus.UNAUTHORIZED);
     }

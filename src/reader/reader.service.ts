@@ -1,6 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { SupabaseService } from '../supabase/supabase.service';
 
+// ============================================
+// INTERFACCE DI OUTPUT
+// ============================================
+
 export interface VoteData {
   upvotes: number;
   downvotes: number;
@@ -28,7 +32,10 @@ export interface MangaDetails {
   down_votes: number;
 }
 
-// Interfacce per i tipi di risposta da Supabase
+// ============================================
+// INTERFACCE PER I TIPI DI RISPOSTA DA SUPABASE
+// ============================================
+
 interface MangaResponse {
   id: number;
   titolo: string;
@@ -136,7 +143,10 @@ export class ReaderService {
 
       return mangaDetails;
     } catch (err) {
-      this.logger.error(`Unexpected error fetching manga ${mangaId}:`, err);
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+      this.logger.error(
+        `Unexpected error fetching manga ${mangaId}: ${errorMessage}`,
+      );
       return null;
     }
   }
@@ -180,7 +190,7 @@ export class ReaderService {
         if (!voteError && vote) {
           const voteData = vote as { vote_type: string };
           if (voteData.vote_type === 'up' || voteData.vote_type === 'down') {
-            userVote = voteData.vote_type;
+            userVote = voteData.vote_type as 'up' | 'down';
           }
         }
       }
@@ -191,7 +201,8 @@ export class ReaderService {
         userVote,
       };
     } catch (err) {
-      this.logger.error(`Error getting vote status: ${err}`);
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+      this.logger.error(`Error getting vote status: ${errorMessage}`);
       return { upvotes: 0, downvotes: 0, userVote: null };
     }
   }
@@ -248,7 +259,8 @@ export class ReaderService {
       // 3. Ritorna lo stato aggiornato
       return this.getVoteStatus(mangaId, normalizedWallet);
     } catch (err) {
-      this.logger.error(`Error voting: ${err}`);
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+      this.logger.error(`Error voting: ${errorMessage}`);
       throw new Error('Failed to vote');
     }
   }
@@ -261,34 +273,44 @@ export class ReaderService {
     userWallet: string,
     voteType: 'up' | 'down',
   ): Promise<void> {
-    // Inserisci il voto
-    const { error: insertError } = await this.supabaseService.supabase
-      .from('votes')
-      .insert({
+    try {
+      // Inserisci il voto
+      const insertData = {
         user_wallet: userWallet,
         manga_id: mangaId,
         vote_type: voteType,
-      });
+      };
 
-    if (insertError) {
-      this.logger.error(`Error inserting vote: ${insertError.message}`);
-      throw insertError;
-    }
+      const { error: insertError } = await this.supabaseService.supabase
+        .from('votes')
+        .insert(insertData as never);
 
-    // Aggiorna il contatore nel manga
-    const incrementField = voteType === 'up' ? 'up_votes' : 'down_votes';
-    const { error: updateError } = await this.supabaseService.supabase
-      .from('manga')
-      .update({
+      if (insertError) {
+        this.logger.error(`Error inserting vote: ${insertError.message}`);
+        throw insertError;
+      }
+
+      // Aggiorna il contatore nel manga
+      const incrementField = voteType === 'up' ? 'up_votes' : 'down_votes';
+      const updateData = {
         [incrementField]: this.supabaseService.supabase.rpc('increment', {
           amount: 1,
-        }),
-      })
-      .eq('id', mangaId);
+        } as never),
+      };
 
-    if (updateError) {
-      this.logger.error(`Error updating manga votes: ${updateError.message}`);
-      throw updateError;
+      const { error: updateError } = await this.supabaseService.supabase
+        .from('manga')
+        .update(updateData as never)
+        .eq('id', mangaId);
+
+      if (updateError) {
+        this.logger.error(`Error updating manga votes: ${updateError.message}`);
+        throw updateError;
+      }
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+      this.logger.error(`Error in createNewVote: ${errorMessage}`);
+      throw err;
     }
   }
 
@@ -301,47 +323,63 @@ export class ReaderService {
     oldVoteType: 'up' | 'down',
     newVoteType: 'up' | 'down',
   ): Promise<void> {
-    // Aggiorna il voto
-    const { error: updateError } = await this.supabaseService.supabase
-      .from('votes')
-      .update({
+    try {
+      // Aggiorna il voto
+      const updateVoteData = {
         vote_type: newVoteType,
         updated_at: new Date().toISOString(),
-      })
-      .eq('id', voteId);
+      };
 
-    if (updateError) {
-      this.logger.error(`Error updating vote: ${updateError.message}`);
-      throw updateError;
-    }
+      const { error: updateError } = await this.supabaseService.supabase
+        .from('votes')
+        .update(updateVoteData as never)
+        .eq('id', voteId);
 
-    // Aggiorna i totali nel manga
-    if (oldVoteType === 'up' && newVoteType === 'down') {
-      // Era up, diventa down
-      await this.supabaseService.supabase
-        .from('manga')
-        .update({
+      if (updateError) {
+        this.logger.error(`Error updating vote: ${updateError.message}`);
+        throw updateError;
+      }
+
+      // Aggiorna i totali nel manga
+      if (oldVoteType === 'up' && newVoteType === 'down') {
+        // Era up, diventa down
+        const updateData = {
           up_votes: this.supabaseService.supabase.rpc('decrement', {
             amount: 1,
-          }),
+          } as never),
           down_votes: this.supabaseService.supabase.rpc('increment', {
             amount: 1,
-          }),
-        })
-        .eq('id', mangaId);
-    } else if (oldVoteType === 'down' && newVoteType === 'up') {
-      // Era down, diventa up
-      await this.supabaseService.supabase
-        .from('manga')
-        .update({
+          } as never),
+        };
+
+        const { error: mangaError } = await this.supabaseService.supabase
+          .from('manga')
+          .update(updateData as never)
+          .eq('id', mangaId);
+
+        if (mangaError) throw mangaError;
+      } else if (oldVoteType === 'down' && newVoteType === 'up') {
+        // Era down, diventa up
+        const updateData = {
           up_votes: this.supabaseService.supabase.rpc('increment', {
             amount: 1,
-          }),
+          } as never),
           down_votes: this.supabaseService.supabase.rpc('decrement', {
             amount: 1,
-          }),
-        })
-        .eq('id', mangaId);
+          } as never),
+        };
+
+        const { error: mangaError } = await this.supabaseService.supabase
+          .from('manga')
+          .update(updateData as never)
+          .eq('id', mangaId);
+
+        if (mangaError) throw mangaError;
+      }
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+      this.logger.error(`Error in changeVote: ${errorMessage}`);
+      throw err;
     }
   }
 
@@ -353,31 +391,39 @@ export class ReaderService {
     mangaId: number,
     voteType: 'up' | 'down',
   ): Promise<void> {
-    // Elimina il voto
-    const { error: deleteError } = await this.supabaseService.supabase
-      .from('votes')
-      .delete()
-      .eq('id', voteId);
+    try {
+      // Elimina il voto
+      const { error: deleteError } = await this.supabaseService.supabase
+        .from('votes')
+        .delete()
+        .eq('id', voteId);
 
-    if (deleteError) {
-      this.logger.error(`Error deleting vote: ${deleteError.message}`);
-      throw deleteError;
-    }
+      if (deleteError) {
+        this.logger.error(`Error deleting vote: ${deleteError.message}`);
+        throw deleteError;
+      }
 
-    // Decrementa il contatore appropriato
-    const decrementField = voteType === 'up' ? 'up_votes' : 'down_votes';
-    const { error: updateError } = await this.supabaseService.supabase
-      .from('manga')
-      .update({
+      // Decrementa il contatore appropriato
+      const decrementField = voteType === 'up' ? 'up_votes' : 'down_votes';
+      const updateData = {
         [decrementField]: this.supabaseService.supabase.rpc('decrement', {
           amount: 1,
-        }),
-      })
-      .eq('id', mangaId);
+        } as never),
+      };
 
-    if (updateError) {
-      this.logger.error(`Error updating manga votes: ${updateError.message}`);
-      throw updateError;
+      const { error: updateError } = await this.supabaseService.supabase
+        .from('manga')
+        .update(updateData as never)
+        .eq('id', mangaId);
+
+      if (updateError) {
+        this.logger.error(`Error updating manga votes: ${updateError.message}`);
+        throw updateError;
+      }
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+      this.logger.error(`Error in removeExistingVote: ${errorMessage}`);
+      throw err;
     }
   }
 
@@ -409,7 +455,8 @@ export class ReaderService {
 
       return this.getVoteStatus(mangaId, normalizedWallet);
     } catch (err) {
-      this.logger.error(`Error removing vote: ${err}`);
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+      this.logger.error(`Error removing vote: ${errorMessage}`);
       throw new Error('Failed to remove vote');
     }
   }
@@ -446,13 +493,15 @@ export class ReaderService {
       if (existing) {
         // Aggiorna bookmark esistente
         const existingData = existing as { id: number };
+        const updateData = {
+          last_page: page,
+          updated_at: now,
+          status: progress === 100 ? 'completed' : 'reading',
+        };
+
         const { error: updateError } = await this.supabaseService.supabase
           .from('bookmarks')
-          .update({
-            last_page: page,
-            updated_at: now,
-            status: progress === 100 ? 'completed' : 'reading',
-          })
+          .update(updateData as never)
           .eq('id', existingData.id);
 
         if (updateError) {
@@ -461,14 +510,16 @@ export class ReaderService {
         }
       } else {
         // Crea nuovo bookmark
+        const insertData = {
+          user_wallet: normalizedWallet,
+          manga_id: mangaId,
+          last_page: page,
+          status: progress === 100 ? 'completed' : 'reading',
+        };
+
         const { error: insertError } = await this.supabaseService.supabase
           .from('bookmarks')
-          .insert({
-            user_wallet: normalizedWallet,
-            manga_id: mangaId,
-            last_page: page,
-            status: progress === 100 ? 'completed' : 'reading',
-          });
+          .insert(insertData as never);
 
         if (insertError) {
           this.logger.error(`Error creating bookmark: ${insertError.message}`);
@@ -484,7 +535,8 @@ export class ReaderService {
         lastRead: new Date(),
       };
     } catch (err) {
-      this.logger.error(`Error saving reading progress: ${err}`);
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+      this.logger.error(`Error saving reading progress: ${errorMessage}`);
       return null;
     }
   }
@@ -539,7 +591,8 @@ export class ReaderService {
         lastRead: new Date(bookmarkData.updated_at),
       };
     } catch (err) {
-      this.logger.error(`Error getting reading progress: ${err}`);
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+      this.logger.error(`Error getting reading progress: ${errorMessage}`);
       return null;
     }
   }
@@ -580,7 +633,8 @@ export class ReaderService {
 
       return data || [];
     } catch (err) {
-      this.logger.error(`Error getting user bookmarks: ${err}`);
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+      this.logger.error(`Error getting user bookmarks: ${errorMessage}`);
       return [];
     }
   }

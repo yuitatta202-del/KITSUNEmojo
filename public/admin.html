@@ -1,21 +1,49 @@
 <!doctype html>
 <html lang="it">
   <head>
-    <!-- Google tag (gtag.js) -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-J3D0Z5V0RZ"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-
-  gtag('config', 'G-J3D0Z5V0RZ');
-</script>
+    <!-- Meta tag exoclick -->
+    <meta name="6a97888e-site-verification" content="86cedfa6aeb1cfa2ee94bb96f9934555">
+    <!-- Meta tag SEO e Social -->
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Kitsune Mojo - Master Control</title>
+    <meta name="description" content="Kitsune Mojo - Master Control Panel per la gestione della libreria manga decentralizzata. Amministra asset, visibilità e importa nuovi contenuti con firma crittografica." />
+    <meta name="keywords" content="manga, admin, control panel, metamask, web3, decentralized, library, kitsune, mojo" />
+    <meta name="author" content="KitsuneMojo" />
+    <meta name="robots" content="noindex, nofollow" />
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://kitsune-mojo.vercel.app/admin.html" />
+    <meta property="og:title" content="Kitsune Mojo 🦊 | Master Control" />
+    <meta property="og:description" content="Pannello di controllo per la gestione della libreria manga decentralizzata" />
+    <meta property="og:image" content="https://kitsune-mojo.vercel.app/og-image.jpg" />
+    
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image" />
+    <meta property="twitter:url" content="https://kitsune-mojo.vercel.app/admin.html" />
+    <meta property="twitter:title" content="Kitsune Mojo 🦊 | Master Control" />
+    <meta property="twitter:description" content="Pannello di controllo per la gestione della libreria manga decentralizzata" />
+    <meta property="twitter:image" content="https://kitsune-mojo.vercel.app/og-image.jpg" />
+    
+    <!-- Favicon emoji volpe -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🦊</text></svg>">
+    
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-J3D0Z5V0RZ"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-J3D0Z5V0RZ');
+    </script>
+    
+    <title>Kitsune Mojo | Master Control</title>
+    
+    <!-- Scripts e stili -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
+    
     <style>
       body { background-color: #050505; color: #e2e8f0; }
       .glass-nav { background: rgba(10, 10, 10, 0.8); backdrop-filter: blur(12px); border-bottom: 1px solid #1f2937; }
@@ -35,7 +63,7 @@
       ::-webkit-scrollbar { width: 8px; }
       ::-webkit-scrollbar-thumb { background: #f6851b; border-radius: 10px; }
       
-      /* MetaMask button style - mantenuto */
+      /* MetaMask button style */
       .metamask-button {
         background: linear-gradient(135deg, #f6851b 0%, #e27613 100%);
         color: white;
@@ -152,21 +180,32 @@
         border-color: #f6851b;
         color: white;
       }
+      
+      /* Total badge con tooltip */
+      .total-badge {
+        background: rgba(246, 133, 27, 0.1);
+        color: #f6851b;
+        font-size: 0.6rem;
+        padding: 0.2rem 0.5rem;
+        border-radius: 20px;
+        margin-left: 0.5rem;
+        cursor: help;
+      }
     </style>
   </head>
   <body class="font-sans">
     <!-- Toast notification -->
     <div id="toast" class="toast"></div>
 
-    <!-- Quick Actions (nuovo) -->
+    <!-- Quick Actions -->
     <div class="quick-actions">
-      <button onclick="refreshDashboard()" class="quick-action-btn" title="Refresh">
+      <button onclick="refreshDashboard()" class="quick-action-btn" title="Refresh 🔄">
         <i class="fas fa-sync-alt"></i>
       </button>
-      <button onclick="exportData()" class="quick-action-btn" title="Export Data">
+      <button onclick="exportData()" class="quick-action-btn" title="Export Data ⬇️">
         <i class="fas fa-download"></i>
       </button>
-      <button onclick="toggleFilters()" class="quick-action-btn" title="Toggle Filters">
+      <button onclick="toggleFilters()" class="quick-action-btn" title="Toggle Filters 🎯">
         <i class="fas fa-filter"></i>
       </button>
     </div>
@@ -175,19 +214,19 @@
       <div class="max-w-7xl mx-auto flex justify-between items-center">
         <div class="flex items-center gap-2 cursor-pointer" onclick="window.location.href = '/'">
           <i class="fas fa-fox text-orange-500 text-2xl"></i>
-          <span class="text-xl font-black tracking-tighter uppercase">Kitsune<span class="text-orange-500">Mojo</span></span>
+          <span class="text-xl font-black tracking-tighter uppercase">Kitsune<span class="text-orange-500">Mojo</span> 🦊</span>
         </div>
         <div class="flex items-center gap-6">
           <a href="analytics.html" class="hidden md:flex items-center gap-2 text-[10px] font-black text-gray-500 hover:text-orange-500 transition uppercase tracking-widest">
-            <i class="fas fa-chart-pie"></i> Intelligence
+            <i class="fas fa-chart-pie"></i> Intelligence 📊
           </a>
           <a href="bulk-import.html" class="hidden md:flex items-center gap-2 text-[10px] font-black text-gray-500 hover:text-orange-500 transition uppercase tracking-widest">
-            <i class="fas fa-layer-group"></i> Bulk Import
+            <i class="fas fa-layer-group"></i> Bulk Import 📦
           </a>
           <div id="wallet-status" class="flex items-center gap-3">
             <button id="connect-wallet-btn" onclick="connectWallet()" class="metamask-button">
               <i class="fab fa-metamask"></i>
-              <span class="text-xs font-black uppercase tracking-wider">Connect Wallet</span>
+              <span class="text-xs font-black uppercase tracking-wider">Connect Wallet 🔌</span>
             </button>
             <div id="wallet-info" class="hidden text-[10px] font-mono text-gray-500 uppercase tracking-widest">
               Node: <span id="wallet-address" class="text-orange-500/70 italic">Disconnected</span>
@@ -201,28 +240,31 @@
     </nav>
 
     <header class="py-12 px-6 text-center">
-      <h2 class="text-4xl md:text-5xl font-black mb-2 tracking-tighter uppercase">Master <span class="text-orange-500">Control</span>.</h2>
-      <p id="access-level" class="text-gray-600 text-xs font-bold uppercase tracking-[0.3em]">Authenticating Node...</p>
+      <h2 class="text-4xl md:text-5xl font-black mb-2 tracking-tighter uppercase">Master <span class="text-orange-500">Control</span></h2>
+      <p id="access-level" class="text-gray-600 text-xs font-bold uppercase tracking-[0.3em]">Connect Wallet to Access Control Panel 🔐</p>
     </header>
 
     <main class="max-w-7xl mx-auto px-6 pb-20">
       <!-- Stats migliorate -->
       <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
         <div class="bg-zinc-950 border border-zinc-900 p-6 rounded-2xl">
-          <span class="text-gray-600 text-[9px] font-black uppercase tracking-widest">Total Assets</span>
+          <div class="flex items-center">
+            <span class="text-gray-600 text-[9px] font-black uppercase tracking-widest">Total Assets 📚</span>
+            <span class="total-badge" id="total-badge" title="Conteggio totale dal database">totale</span>
+          </div>
           <div id="total-manga" class="text-2xl font-black text-white mt-1">0</div>
         </div>
         <div class="bg-zinc-950 border border-zinc-900 p-6 rounded-2xl">
-          <span class="text-gray-600 text-[9px] font-black uppercase tracking-widest">Public Assets</span>
+          <span class="text-gray-600 text-[9px] font-black uppercase tracking-widest">Public Assets 🌐</span>
           <div id="public-assets" class="text-2xl font-black text-green-500 mt-1">0</div>
         </div>
         <div class="bg-zinc-950 border border-zinc-900 p-6 rounded-2xl">
-          <span class="text-gray-600 text-[9px] font-black uppercase tracking-widest">Hidden Assets</span>
+          <span class="text-gray-600 text-[9px] font-black uppercase tracking-widest">Hidden Assets 👻</span>
           <div id="hidden-assets" class="text-2xl font-black text-red-500 mt-1">0</div>
         </div>
         <div id="repair-node" onclick="runGlobalMaintenance()" class="bg-zinc-950 border border-zinc-900 p-6 rounded-2xl cursor-pointer hover:border-red-500/50 transition group">
           <div class="flex justify-between items-start">
-            <span class="text-red-500/50 text-[9px] font-black uppercase tracking-widest">Maintenance</span>
+            <span class="text-red-500/50 text-[9px] font-black uppercase tracking-widest">Maintenance 🔧</span>
             <i class="fas fa-tools text-[10px] text-gray-700 group-hover:text-red-500 transition"></i>
           </div>
           <div class="text-red-500 text-xs font-bold mt-2 flex items-center gap-2">
@@ -231,23 +273,23 @@
         </div>
       </div>
 
-      <!-- Filtri migliorati (nuovo) -->
+      <!-- Filtri migliorati -->
       <div id="filter-section" class="hidden mb-6">
         <div class="bg-zinc-950 border border-zinc-900 p-6 rounded-2xl">
           <div class="flex flex-wrap gap-3 mb-4">
-            <span class="text-gray-600 text-[9px] font-black uppercase tracking-widest w-full">Filter by:</span>
+            <span class="text-gray-600 text-[9px] font-black uppercase tracking-widest w-full">Filter by: 🎯</span>
             <button onclick="filterByVisibility('all')" class="filter-chip active" id="filter-all">ALL</button>
             <button onclick="filterByVisibility('public')" class="filter-chip" id="filter-public">PUBLIC</button>
             <button onclick="filterByVisibility('private')" class="filter-chip" id="filter-private">PRIVATE</button>
           </div>
           <div class="flex items-center gap-3">
-            <span class="text-gray-600 text-[9px] font-black uppercase tracking-widest">Sort by:</span>
+            <span class="text-gray-600 text-[9px] font-black uppercase tracking-widest">Sort by: 🔽</span>
             <select id="sort-select" onchange="sortManga()" class="bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-2 text-xs text-white">
-              <option value="id-desc">ID (Newest)</option>
-              <option value="id-asc">ID (Oldest)</option>
-              <option value="title-asc">Title A-Z</option>
-              <option value="title-desc">Title Z-A</option>
-              <option value="views-desc">Most Viewed</option>
+              <option value="id-desc">ID (Newest) ⬇️</option>
+              <option value="id-asc">ID (Oldest) ⬆️</option>
+              <option value="title-asc">Title A-Z 🔤</option>
+              <option value="title-desc">Title Z-A 🔤</option>
+              <option value="views-desc">Most Viewed 👁️</option>
             </select>
           </div>
         </div>
@@ -255,15 +297,15 @@
 
       <div class="relative mb-8">
         <i class="fas fa-search absolute left-6 top-1/2 -translate-y-1/2 text-gray-600"></i>
-        <input type="text" id="search-bar" onkeyup="filterManga()" placeholder="SEARCH ASSET..." class="w-full bg-zinc-950 border border-zinc-900 rounded-2xl py-5 pl-14 pr-6 text-xs font-bold tracking-widest uppercase focus:border-orange-500" />
+        <input type="text" id="search-bar" onkeyup="filterManga()" placeholder="SEARCH ASSET... 🔍" class="w-full bg-zinc-950 border border-zinc-900 rounded-2xl py-5 pl-14 pr-6 text-xs font-bold tracking-widest uppercase focus:border-orange-500" />
       </div>
 
       <div class="bg-zinc-950 border border-zinc-900 p-8 rounded-3xl mb-12">
         <textarea id="import-url" placeholder="https://hentaifox.com/g/... (uno per riga)" class="w-full bg-zinc-900 border border-zinc-800 rounded-2xl px-6 py-4 text-sm text-white min-h-[120px] font-mono mb-4"></textarea>
         <div class="flex justify-end gap-4">
-          <button onclick="clearImportUrls()" class="px-8 py-4 rounded-2xl font-black uppercase text-xs bg-zinc-900 text-gray-400 hover:bg-zinc-800 transition">Clear</button>
+          <button onclick="clearImportUrls()" class="px-8 py-4 rounded-2xl font-black uppercase text-xs bg-zinc-900 text-gray-400 hover:bg-zinc-800 transition">Clear 🧹</button>
           <button id="import-btn" onclick="importManga()" class="btn-mojo px-12 py-4 rounded-2xl font-black uppercase text-xs flex items-center gap-2">
-            <i class="fas fa-download"></i> Execute Bulk Import
+            <i class="fas fa-download"></i> Execute Bulk Import 📥
           </button>
         </div>
       </div>
@@ -272,14 +314,19 @@
         <table class="w-full text-left">
           <thead class="bg-zinc-900/50 text-gray-500 text-[10px] uppercase font-black tracking-widest">
             <tr>
-              <th class="p-6">Cover</th>
-              <th class="p-6">Details</th>
-              <th class="p-6">ID / Status</th>
-              <th class="p-6 text-right">Actions</th>
+              <th class="p-6">Cover 🖼️</th>
+              <th class="p-6">Details ℹ️</th>
+              <th class="p-6">ID / Status 🏷️</th>
+              <th class="p-6 text-right">Actions ⚡</th>
             </tr>
           </thead>
           <tbody id="manga-list" class="divide-y divide-zinc-900"></tbody>
         </table>
+      </div>
+      
+      <!-- Info caricamento -->
+      <div id="loading-info" class="text-center mt-4 text-[10px] text-gray-700 font-mono hidden">
+        <i class="fas fa-spinner animate-spin mr-2"></i> Caricamento dati...
       </div>
     </main>
 
@@ -298,18 +345,18 @@
           <h2 id="preview-title" class="text-2xl font-black uppercase tracking-tighter leading-none mb-2">TITLE</h2>
           <p id="preview-artist" class="text-orange-500 text-xs font-black uppercase mb-6 italic tracking-widest">ARTIST</p>
           <div class="flex-grow overflow-y-auto custom-scroll pr-2">
-            <p class="text-[10px] text-gray-500 font-black uppercase mb-2 tracking-widest">Tags / Metadata</p>
+            <p class="text-[10px] text-gray-500 font-black uppercase mb-2 tracking-widest">Tags / Metadata 🏷️</p>
             <div id="preview-tags" class="flex flex-wrap gap-2 mb-6"></div>
-            <p class="text-[10px] text-gray-500 font-black uppercase mb-2 tracking-widest">Pages</p>
+            <p class="text-[10px] text-gray-500 font-black uppercase mb-2 tracking-widest">Pages 📄</p>
             <div id="preview-pages" class="flex flex-wrap gap-1"></div>
           </div>
           <div class="mt-6 pt-6 border-t border-zinc-900 flex gap-4">
-            <button id="preview-link" class="flex-grow btn-mojo py-3 rounded-xl font-black uppercase text-[10px] tracking-widest">Open Original Source</button>
-            <div id="preview-lang" class="bg-zinc-900 px-4 py-3 rounded-xl font-black text-[10px] text-gray-400">JP</div>
+            <button id="preview-link" class="flex-grow btn-mojo py-3 rounded-xl font-black uppercase text-[10px] tracking-widest">Open Original Source 🔗</button>
+            <div id="preview-lang" class="bg-zinc-900 px-4 py-3 rounded-xl font-black text-[10px] text-gray-400">JP 🇯🇵</div>
           </div>
           <div class="mt-4 flex gap-2">
             <button id="preview-toggle-visibility" class="flex-grow bg-zinc-900 py-3 rounded-xl font-black uppercase text-[10px] tracking-widest hover:bg-zinc-800 transition">
-              Toggle Visibility
+              Toggle Visibility 👁️
             </button>
           </div>
         </div>
@@ -319,296 +366,407 @@
     <!-- Edit Modal -->
     <div id="edit-modal" class="hidden fixed inset-0 z-[210] flex items-center justify-center p-4 bg-black/90">
       <div class="bg-zinc-950 border border-orange-500/30 w-full max-w-md rounded-3xl p-8">
-        <h3 class="text-xl font-black text-white uppercase mb-6">Modify Asset</h3>
+        <h3 class="text-xl font-black text-white uppercase mb-6">Modify Asset ✏️</h3>
         <input type="hidden" id="edit-id" />
         <input type="text" id="edit-title" class="w-full rounded-xl px-5 py-3 text-sm mb-4" placeholder="Titolo" />
         <input type="text" id="edit-author" class="w-full rounded-xl px-5 py-3 text-sm mb-6" placeholder="Autore" />
         <div class="flex gap-4">
-            <button onclick="closeEdit()" class="flex-grow bg-zinc-900 text-gray-400 py-4 rounded-xl font-black uppercase text-xs">Cancel</button>
-            <button onclick="saveEdit()" class="flex-grow btn-mojo py-4 rounded-xl font-black uppercase text-xs">Confirm</button>
+            <button onclick="closeEdit()" class="flex-grow bg-zinc-900 text-gray-400 py-4 rounded-xl font-black uppercase text-xs">Cancel ❌</button>
+            <button onclick="saveEdit()" class="flex-grow btn-mojo py-4 rounded-xl font-black uppercase text-xs">Confirm ✅</button>
         </div>
       </div>
     </div>
-<script>
- // ============================================
-  // CONFIGURAZIONE - Versione produzione
-  // ============================================
-  
-  // Determina l'URL base in base all'ambiente
-  const BASE_URL = window.location.hostname === 'localhost' 
-    ? 'http://localhost:3000' 
-  : 'https://kitsune-backend.onrender.com';  // ← ORA È CORRETTO!
 
-  const API_URL = BASE_URL;
-  const BASE_ADMIN_URL = `${BASE_URL}/admin`;
-  const PROXY_URL = `${BASE_URL}/admin/proxy?url=`;
-  const AUTHORIZED_ADMINS = ['0x2aab3b9458cbb3709c6a131b1d9a7a0eb111efbc'.toLowerCase()];
-  const STORAGE_KEY = 'kitsune_wallet_session';
+    <script>
+      // ============================================
+      // CONFIGURAZIONE - Versione produzione
+      // ============================================
+      
+      // Determina l'URL base in base all'ambiente
+      const BASE_URL = window.location.hostname === 'localhost' 
+        ? 'http://localhost:3000' 
+        : 'https://kitsune-backend.onrender.com';
 
-  // Log per debug
-  console.log('🌐 Environment:', window.location.hostname === 'localhost' ? 'development' : 'production');
-  console.log('🌐 BASE_URL:', BASE_URL);
-  console.log('🌐 API_URL:', API_URL);
-  console.log('🌐 BASE_ADMIN_URL:', BASE_ADMIN_URL);
-  console.log('🌐 PROXY_URL:', PROXY_URL);
+      const API_URL = BASE_URL;
+      const BASE_ADMIN_URL = `${BASE_URL}/admin`;
+      const PROXY_URL = `${BASE_URL}/admin/proxy?url=`;
+      const AUTHORIZED_ADMINS = ['0x2aab3b9458cbb3709c6a131b1d9a7a0eb111efbc'.toLowerCase()];
+      const STORAGE_KEY = 'kitsune_wallet_session';
 
-  let userWallet = null;
-  let allManga = [];
-  let filteredManga = [];
-  let autoRefreshEnabled = true;
-  let currentFilter = 'all';
-  let currentSort = 'id-desc';
+      // Log per debug
+      console.log('🌐 Environment:', window.location.hostname === 'localhost' ? 'development' : 'production');
+      console.log('🌐 BASE_URL:', BASE_URL);
+      console.log('🌐 BASE_ADMIN_URL:', BASE_ADMIN_URL);
+      console.log('🌐 PROXY_URL:', PROXY_URL);
 
-  // Funzione per mostrare toast notification
-  function showToast(message, type = 'info') {
-    const toast = document.getElementById('toast');
-    toast.textContent = message;
-    toast.className = `toast ${type}`;
-    toast.classList.add('show');
-    setTimeout(() => {
-      toast.classList.remove('show');
-    }, 3000);
-  }
+      let userWallet = null;
+      let allManga = [];
+      let filteredManga = [];
+      let autoRefreshEnabled = true;
+      let currentFilter = 'all';
+      let currentSort = 'id-desc';
+      let totalMangaCount = 0;
+      let publicMangaCount = 0;
+      let hiddenMangaCount = 0;
 
-  // Salva sessione wallet
-  function saveWalletSession(wallet) {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({
-      wallet: wallet,
-      timestamp: Date.now()
-    }));
-  }
-
-  // Carica sessione wallet
-  function loadWalletSession() {
-    const session = localStorage.getItem(STORAGE_KEY);
-    if (session) {
-      try {
-        const data = JSON.parse(session);
-        // Sessione valida per 24 ore
-        if (Date.now() - data.timestamp < 24 * 60 * 60 * 1000) {
-          return data.wallet;
-        }
-      } catch (e) {
-        console.error('Errore caricamento sessione', e);
+      // Funzione per mostrare toast notification
+      function showToast(message, type = 'info') {
+        const toast = document.getElementById('toast');
+        toast.textContent = message;
+        toast.className = `toast ${type}`;
+        toast.classList.add('show');
+        setTimeout(() => {
+          toast.classList.remove('show');
+        }, 3000);
       }
-    }
-    return null;
-  }
 
-  // Rimuovi sessione wallet
-  function clearWalletSession() {
-    localStorage.removeItem(STORAGE_KEY);
-  }
+      // Salva sessione wallet
+      function saveWalletSession(wallet) {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({
+          wallet: wallet,
+          timestamp: Date.now()
+        }));
+      }
 
-  async function connectWallet() {
-    if (window.ethereum) {
-      try {
-        const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-        userWallet = accounts[0].toLowerCase();
-        
-        // Salva sessione
-        saveWalletSession(userWallet);
-        
-        // Nascondi bottone connect, mostra info wallet
-        document.getElementById('connect-wallet-btn').classList.add('hidden');
-        document.getElementById('wallet-info').classList.remove('hidden');
-        document.getElementById('wallet-address').innerText = userWallet.substring(0, 6) + '...' + userWallet.slice(-4);
-        
-        const isAdmin = AUTHORIZED_ADMINS.includes(userWallet);
-        document.getElementById('access-level').innerHTML = isAdmin 
-            ? `<span class="text-orange-500 animate-pulse font-black">👑 SUPREME ADMIN</span>` 
-            : `<span class="text-blue-400 font-bold">MODERATOR (READ-ONLY)</span>`;
-        
-        loadDashboard();
+      // Carica sessione wallet
+      function loadWalletSession() {
+        const session = localStorage.getItem(STORAGE_KEY);
+        if (session) {
+          try {
+            const data = JSON.parse(session);
+            // Sessione valida per 24 ore
+            if (Date.now() - data.timestamp < 24 * 60 * 60 * 1000) {
+              return data.wallet;
+            }
+          } catch (e) {
+            console.error('Errore caricamento sessione', e);
+          }
+        }
+        return null;
+      }
 
-        // Ascolta cambi di account
-        window.ethereum.on('accountsChanged', (accounts) => {
-          if (accounts.length === 0) {
-            disconnectWallet();
+      // Rimuovi sessione wallet
+      function clearWalletSession() {
+        localStorage.removeItem(STORAGE_KEY);
+      }
+
+      async function connectWallet() {
+        if (!window.ethereum) {
+          showToast("Please install MetaMask to access admin panel", "error");
+          document.getElementById('access-level').innerText = "MetaMask not detected.";
+          return;
+        }
+
+        try {
+          // Richiedi account
+          const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+          userWallet = accounts[0].toLowerCase();
+          
+          // Salva sessione
+          saveWalletSession(userWallet);
+          
+          // Nascondi bottone connect, mostra info wallet
+          document.getElementById('connect-wallet-btn').classList.add('hidden');
+          document.getElementById('wallet-info').classList.remove('hidden');
+          document.getElementById('wallet-address').innerText = userWallet.substring(0, 6) + '...' + userWallet.slice(-4);
+          
+          const isAdmin = AUTHORIZED_ADMINS.includes(userWallet);
+          document.getElementById('access-level').innerHTML = isAdmin 
+              ? `<span class="text-orange-500 animate-pulse font-black">👑 SUPREME ADMIN</span>` 
+              : `<span class="text-yellow-500 font-bold">🔍 MODERATOR (READ-ONLY)</span>`;
+          
+          // Carica dashboard
+          await loadDashboard();
+
+          // Ascolta cambi di account
+          window.ethereum.on('accountsChanged', (accounts) => {
+            if (accounts.length === 0) {
+              disconnectWallet();
+            } else {
+              userWallet = accounts[0].toLowerCase();
+              saveWalletSession(userWallet);
+              document.getElementById('wallet-address').innerText = userWallet.substring(0, 6) + '...' + userWallet.slice(-4);
+              loadDashboard();
+            }
+          });
+
+          // Ascolta cambio chain
+          window.ethereum.on('chainChanged', () => {
+            window.location.reload();
+          });
+
+          showToast("Wallet connected successfully! ✅", "success");
+
+        } catch (err) {
+          console.error("Wallet connection failed", err);
+          
+          if (err.code === 4001) {
+            showToast("Connection rejected by user", "error");
           } else {
-            userWallet = accounts[0].toLowerCase();
-            saveWalletSession(userWallet);
-            document.getElementById('wallet-address').innerText = userWallet.substring(0, 6) + '...' + userWallet.slice(-4);
-            loadDashboard();
+            showToast("Connection failed: " + err.message, "error");
+          }
+          
+          document.getElementById('access-level').innerText = "Connection failed. Try again.";
+        }
+      }
+
+      function disconnectWallet() {
+        userWallet = null;
+        clearWalletSession();
+        document.getElementById('connect-wallet-btn').classList.remove('hidden');
+        document.getElementById('wallet-info').classList.add('hidden');
+        document.getElementById('access-level').innerHTML = 'Connect Wallet to Access Control Panel 🔐';
+        document.getElementById('manga-list').innerHTML = '';
+        document.getElementById('total-manga').innerText = '0';
+        document.getElementById('public-assets').innerText = '0';
+        document.getElementById('hidden-assets').innerText = '0';
+        document.getElementById('total-badge').innerText = 'totale';
+        totalMangaCount = 0;
+        publicMangaCount = 0;
+        hiddenMangaCount = 0;
+        showToast("Wallet disconnected", "info");
+      }
+
+      async function loadDashboard() {
+        // Mostra indicatore di caricamento
+        document.getElementById('loading-info').classList.remove('hidden');
+        
+        try {
+          // Chiamata all'endpoint aggiornato che restituisce { data, total, publicCount, hiddenCount }
+          const res = await fetch(`${BASE_ADMIN_URL}/manga/details`);
+          if (!res.ok) {
+            if (res.status === 404) {
+              throw new Error("Endpoint /admin/manga/details non trovato");
+            }
+            // Prova a leggere il corpo dell'errore per maggiori dettagli
+            const errorText = await res.text();
+            throw new Error(`Server error: ${res.status} - ${errorText.substring(0, 100)}`);
+          }
+          
+          const response = await res.json();
+          console.log('✅ Risposta backend:', response);
+          
+          // ✅ GESTIONE NUOVO FORMATO CON DATA, TOTAL, PUBLICCOUNT, HIDDENCOUNT
+          if (response && typeof response === 'object' && 'data' in response) {
+            allManga = Array.isArray(response.data) ? response.data : [];
+            totalMangaCount = response.total || allManga.length;
+            publicMangaCount = response.publicCount || 0;
+            hiddenMangaCount = response.hiddenCount || 0;
+            
+            // Mostra i conteggi REALI dal database
+            document.getElementById('total-manga').innerText = totalMangaCount;
+            document.getElementById('public-assets').innerText = publicMangaCount;
+            document.getElementById('hidden-assets').innerText = hiddenMangaCount;
+            
+            // Aggiorna il badge con info sul caricamento
+            if (totalMangaCount > allManga.length) {
+              document.getElementById('total-badge').innerText = `caricati ${allManga.length}`;
+              document.getElementById('total-badge').title = `Mostrando ${allManga.length} di ${totalMangaCount} manga totali. Public: ${publicMangaCount}, Hidden: ${hiddenMangaCount}`;
+            } else {
+              document.getElementById('total-badge').innerText = 'totale';
+            }
+            
+            // Log per debug
+            console.log(`📊 Totali DB: ${totalMangaCount} (Public: ${publicMangaCount}, Hidden: ${hiddenMangaCount})`);
+            console.log(`📊 Caricati: ${allManga.length} manga`);
+            
+          } else {
+            // Fallback per compatibilità con vecchio formato
+            console.warn('⚠️ Formato risposta non riconosciuto, uso fallback');
+            allManga = Array.isArray(response) ? response : [];
+            totalMangaCount = allManga.length;
+            
+            const publicCount = allManga.filter(m => m.visible !== false).length;
+            const hiddenCount = allManga.filter(m => m.visible === false).length;
+            
+            document.getElementById('total-manga').innerText = totalMangaCount;
+            document.getElementById('public-assets').innerText = publicCount;
+            document.getElementById('hidden-assets').innerText = hiddenCount;
+          }
+          
+          applyFiltersAndSort();
+          
+        } catch (err) {
+          console.error('❌ Error loading dashboard:', err);
+          document.getElementById('manga-list').innerHTML = `
+            <tr>
+              <td colspan="4" class="p-12 text-center text-gray-600">
+                <i class="fas fa-exclamation-triangle text-4xl mb-4 text-orange-500/50"></i>
+                <p class="text-sm mb-2">Cannot load manga data</p>
+                <p class="text-xs text-gray-700">${err.message}</p>
+              </td>
+            </tr>
+          `;
+        } finally {
+          // Nascondi indicatore di caricamento
+          document.getElementById('loading-info').classList.add('hidden');
+        }
+      }
+
+      function applyFiltersAndSort() {
+        // Applica filtro
+        let filtered = [...allManga];
+        
+        if (currentFilter === 'public') {
+          filtered = filtered.filter(m => m.visible !== false);
+        } else if (currentFilter === 'private') {
+          filtered = filtered.filter(m => m.visible === false);
+        }
+        
+        // Applica ricerca
+        const searchTerm = document.getElementById('search-bar')?.value.toLowerCase() || '';
+        if (searchTerm) {
+          filtered = filtered.filter(m => 
+            m.titolo?.toLowerCase().includes(searchTerm) || 
+            (m.artisti?.nome && m.artisti.nome.toLowerCase().includes(searchTerm))
+          );
+        }
+        
+        // Applica ordinamento
+        filtered.sort((a, b) => {
+          switch(currentSort) {
+            case 'id-desc': return b.id - a.id;
+            case 'id-asc': return a.id - b.id;
+            case 'title-asc': return (a.titolo || '').localeCompare(b.titolo || '');
+            case 'title-desc': return (b.titolo || '').localeCompare(a.titolo || '');
+            case 'views-desc': return (b.views || 0) - (a.views || 0);
+            default: return b.id - a.id;
           }
         });
-
-        // Ascolta cambio chain
-        window.ethereum.on('chainChanged', () => {
-          window.location.reload();
-        });
-
-      } catch (err) {
-        console.error("Wallet connection failed", err);
-        showToast("Connessione wallet fallita", "error");
+        
+        filteredManga = filtered;
+        renderManga(filtered);
       }
-    } else {
-        document.getElementById('access-level').innerText = "MetaMask not detected.";
-        showToast("Please install MetaMask to access admin panel", "error");
-    }
-  }
 
-  function disconnectWallet() {
-    userWallet = null;
-    clearWalletSession();
-    document.getElementById('connect-wallet-btn').classList.remove('hidden');
-    document.getElementById('wallet-info').classList.add('hidden');
-    document.getElementById('access-level').innerHTML = 'Connect Wallet to Access Control Panel';
-    document.getElementById('manga-list').innerHTML = '';
-    document.getElementById('total-manga').innerText = '0';
-    showToast("Wallet disconnected", "info");
-  }
+      function renderManga(list) {
+        const container = document.getElementById('manga-list');
+        const isAdmin = userWallet && AUTHORIZED_ADMINS.includes(userWallet);
 
-  async function loadDashboard() {
-    try {
-      const res = await fetch(`${BASE_ADMIN_URL}/manga`);
-      if(!res.ok) throw new Error("Server error");
-      allManga = await res.json();
-      
-      // Calcola statistiche
-      const publicCount = allManga.filter(m => m.visible !== false).length;
-      const hiddenCount = allManga.filter(m => m.visible === false).length;
-      
-      document.getElementById('total-manga').innerText = allManga.length;
-      document.getElementById('public-assets').innerText = publicCount;
-      document.getElementById('hidden-assets').innerText = hiddenCount;
-      
-      applyFiltersAndSort();
-    } catch (err) {
-      console.error('Offline or Server error');
-      document.getElementById('manga-list').innerHTML = `
-        <tr>
-          <td colspan="4" class="p-12 text-center text-gray-600">
-            <i class="fas fa-plug text-4xl mb-4 block"></i>
-            Server offline. Cannot load manga data.
-          </td>
-        </tr>
-      `;
-    }
-  }
+        if (!list || list.length === 0) {
+          container.innerHTML = `
+            <tr>
+              <td colspan="4" class="p-12 text-center text-gray-600">
+                <i class="fas fa-box-open text-4xl mb-4 block"></i>
+                No manga found. Import some assets to get started. 📭
+              </td>
+            </tr>
+          `;
+          return;
+        }
 
-  function applyFiltersAndSort() {
-    // Applica filtro
-    let filtered = [...allManga];
-    
-    if (currentFilter === 'public') {
-      filtered = filtered.filter(m => m.visible !== false);
-    } else if (currentFilter === 'private') {
-      filtered = filtered.filter(m => m.visible === false);
-    }
-    
-    // Applica ricerca
-    const searchTerm = document.getElementById('search-bar')?.value.toLowerCase() || '';
-    if (searchTerm) {
-      filtered = filtered.filter(m => 
-        m.titolo.toLowerCase().includes(searchTerm) || 
-        (m.artisti?.nome && m.artisti.nome.toLowerCase().includes(searchTerm))
-      );
-    }
-    
-    // Applica ordinamento
-    filtered.sort((a, b) => {
-      switch(currentSort) {
-        case 'id-desc': return b.id - a.id;
-        case 'id-asc': return a.id - b.id;
-        case 'title-asc': return (a.titolo || '').localeCompare(b.titolo || '');
-        case 'title-desc': return (b.titolo || '').localeCompare(a.titolo || '');
-        case 'views-desc': return (b.views || 0) - (a.views || 0);
-        default: return b.id - a.id;
+        container.innerHTML = list.map(m => {
+          const isVisible = m.visible !== false;
+          const imageUrl = m.immagine ? `${PROXY_URL}${encodeURIComponent(m.immagine)}` : '';
+          
+          return `
+          <tr class="manga-row">
+            <td class="p-6">
+              <div class="w-12 h-16 bg-zinc-900 rounded overflow-hidden cursor-pointer" onclick="openPreview(${m.id})">
+                <img src="${imageUrl}" class="w-full h-full object-cover" onerror="tryAlternateServers(this, '${m.immagine}')">
+              </div>
+            </td>
+            <td class="p-6">
+              <div onclick="openPreview(${m.id})" class="mojo-title-link font-black text-sm text-white uppercase tracking-tight">${m.titolo}</div>
+              <div class="text-orange-500/50 text-[10px] font-black uppercase mt-1 italic">${m.artisti?.nome || 'Unknown'}</div>
+              <div class="mt-2">
+                <span class="visibility-badge ${isVisible ? 'public' : 'private'}">
+                  <i class="fas ${isVisible ? 'fa-eye' : 'fa-eye-slash'}"></i>
+                  ${isVisible ? 'PUBLIC' : 'HIDDEN'}
+                </span>
+              </div>
+            </td>
+            <td class="p-6 text-[10px] font-mono text-gray-500 uppercase">
+              ID: ${m.id} <br> 
+              <span class="text-zinc-700">${m.lingua || 'JP'}</span><br>
+              <span class="text-green-600/50">${m.views || 0} views</span>
+            </td>
+            <td class="p-6 text-right space-x-2">
+              ${isAdmin ? `
+                <button onclick="toggleVisibility(${m.id}, ${!isVisible})" class="w-9 h-9 rounded-full bg-zinc-900 ${isVisible ? 'text-red-500' : 'text-green-500'} border border-zinc-800 transition hover:bg-orange-500 hover:text-white" title="${isVisible ? 'Hide' : 'Publish'}">
+                  <i class="fas ${isVisible ? 'fa-eye-slash' : 'fa-eye'}"></i>
+                </button>
+                <button onclick="openEdit(${m.id})" class="w-9 h-9 rounded-full bg-zinc-900 text-orange-400 border border-zinc-800 transition hover:bg-orange-500 hover:text-white"><i class="fas fa-edit"></i></button>
+                <button onclick="deleteManga(${m.id})" class="w-9 h-9 rounded-full bg-zinc-900 text-red-900 border border-zinc-800 transition hover:bg-red-600 hover:text-white"><i class="fas fa-trash"></i></button>
+              ` : '<i class="fas fa-lock text-zinc-800"></i>'}
+            </td>
+          </tr>
+        `}).join('');
       }
-    });
-    
-    filteredManga = filtered;
-    renderManga(filtered);
+
+      async function toggleVisibility(id, newVisibility) {
+        if (!userWallet) {
+          showToast("Connect Wallet first", "error");
+          return;
+        }
+        
+        try {
+          const provider = new ethers.providers.Web3Provider(window.ethereum);
+          const signer = provider.getSigner();
+          
+          const message = `KitsuneMojo Admin: Toggle Visibility for Asset ID ${id} to ${newVisibility ? 'PUBLIC' : 'HIDDEN'}`;
+          const signature = await signer.signMessage(message);
+
+          const res = await fetch(`${BASE_ADMIN_URL}/manga/${id}/visibility`, {
+            method: 'PUT',
+            headers: { 
+              'Content-Type': 'application/json',
+              'x-wallet': userWallet,
+              'x-signature': signature,
+              'x-message': message
+            },
+            body: JSON.stringify({ visible: newVisibility })
+          });
+
+          if (res.ok) {
+            showToast(`Asset ${id} visibility updated ✅`, "success");
+            await loadDashboard();
+          } else {
+            const data = await res.json();
+            showToast("Error: " + (data.message || "Unauthorized"), "error");
+          }
+        } catch (err) {
+          console.error("Operation failed", err);
+          if (err.code === 4001) {
+            showToast("Signature denied by user", "error");
+          } else {
+            showToast("Server Connection Error: " + err.message, "error");
+          }
+        }
+      }
+
+      async function deleteManga(id) {
+  if (!userWallet) {
+    showToast("Connect Wallet first", "error");
+    return;
   }
-
-  function renderManga(list) {
-    const container = document.getElementById('manga-list');
-    const isAdmin = userWallet && AUTHORIZED_ADMINS.includes(userWallet);
-
-    if (!list || list.length === 0) {
-      container.innerHTML = `
-        <tr>
-          <td colspan="4" class="p-12 text-center text-gray-600">
-            <i class="fas fa-box-open text-4xl mb-4 block"></i>
-            No manga found. Import some assets to get started.
-          </td>
-        </tr>
-      `;
-      return;
-    }
-
-    container.innerHTML = list.map(m => {
-      const isVisible = m.visible !== false;
-      return `
-      <tr class="manga-row">
-        <td class="p-6">
-          <div class="w-12 h-16 bg-zinc-900 rounded overflow-hidden cursor-pointer" onclick="openPreview(${m.id})">
-            <img src="${PROXY_URL + encodeURIComponent(m.immagine || '')}" class="w-full h-full object-cover" onerror="this.src='https://via.placeholder.com/48x64?text=No+Image'">
-          </div>
-        </td>
-        <td class="p-6">
-          <div onclick="openPreview(${m.id})" class="mojo-title-link font-black text-sm text-white uppercase tracking-tight">${m.titolo}</div>
-          <div class="text-orange-500/50 text-[10px] font-black uppercase mt-1 italic">${m.artisti?.nome || 'Unknown'}</div>
-          <div class="mt-2">
-            <span class="visibility-badge ${isVisible ? 'public' : 'private'}">
-              <i class="fas ${isVisible ? 'fa-eye' : 'fa-eye-slash'}"></i>
-              ${isVisible ? 'PUBLIC' : 'HIDDEN'}
-            </span>
-          </div>
-        </td>
-        <td class="p-6 text-[10px] font-mono text-gray-500 uppercase">
-          ID: ${m.id} <br> 
-          <span class="text-zinc-700">${m.lingua || 'JP'}</span><br>
-          <span class="text-green-600/50">${m.views || 0} views</span>
-        </td>
-        <td class="p-6 text-right space-x-2">
-          ${isAdmin ? `
-            <button onclick="toggleVisibility(${m.id}, ${!isVisible})" class="w-9 h-9 rounded-full bg-zinc-900 ${isVisible ? 'text-red-500' : 'text-green-500'} border border-zinc-800 transition hover:bg-orange-500 hover:text-white" title="${isVisible ? 'Hide' : 'Publish'}">
-              <i class="fas ${isVisible ? 'fa-eye-slash' : 'fa-eye'}"></i>
-            </button>
-            <button onclick="openEdit(${m.id})" class="w-9 h-9 rounded-full bg-zinc-900 text-orange-400 border border-zinc-800 transition hover:bg-orange-500 hover:text-white"><i class="fas fa-edit"></i></button>
-            <button onclick="deleteManga(${m.id})" class="w-9 h-9 rounded-full bg-zinc-900 text-red-900 border border-zinc-800 transition hover:bg-red-600 hover:text-white"><i class="fas fa-trash"></i></button>
-          ` : '<i class="fas fa-lock text-zinc-800"></i>'}
-        </td>
-      </tr>
-    `}).join('');
-  }
-
-  // Nuova funzione per toggle visibilità
-  async function toggleVisibility(id, newVisibility) {
-    if (!userWallet) {
-      showToast("Connect Wallet first", "error");
-      return;
-    }
-    
+  
+  if (confirm(`ARE YOU SURE? This action requires MetaMask signature to delete Asset #${id}`)) {
     try {
       const provider = new ethers.providers.Web3Provider(window.ethereum);
       const signer = provider.getSigner();
       
-      const message = `KitsuneMojo Admin: Toggle Visibility for Asset ID ${id} to ${newVisibility ? 'PUBLIC' : 'HIDDEN'}`;
+      const message = `KitsuneMojo Admin: Delete Request for Asset ID ${id}`;
       const signature = await signer.signMessage(message);
 
-      const res = await fetch(`${BASE_ADMIN_URL}/manga/${id}/visibility`, {
-        method: 'PUT',
+      const res = await fetch(`${BASE_ADMIN_URL}/manga/${id}`, {
+        method: 'DELETE',
         headers: { 
           'Content-Type': 'application/json',
           'x-wallet': userWallet,
           'x-signature': signature,
           'x-message': message
-        },
-        body: JSON.stringify({ visible: newVisibility })
+        }
       });
 
       if (res.ok) {
-        showToast(`Asset ${id} visibility updated`, "success");
-        await loadDashboard(); // Ricarica immediatamente
+        showToast(`Asset ${id} deleted successfully 🗑️`, "success");
+        await loadDashboard();
       } else {
         const data = await res.json();
         showToast("Error: " + (data.message || "Unauthorized"), "error");
       }
     } catch (err) {
-      console.error("Operation failed", err);
+      console.error("Operation cancelled or failed", err);
       if (err.code === 4001) {
         showToast("Signature denied by user", "error");
       } else {
@@ -616,281 +774,249 @@
       }
     }
   }
+}
+      async function runGlobalMaintenance() {
+        if (!userWallet) {
+          showToast("Connect Wallet first", "error");
+          return;
+        }
+        
+        if (confirm("⚠️ INITIATE GLOBAL LINK REPAIR? This will check all images and attempt to fix broken links.")) {
+          try {
+            const res = await fetch(`${BASE_ADMIN_URL}/maintenance/repair-all`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' }
+            });
+            
+            if (res.ok) {
+              showToast("Repair process started in background 🔧", "success");
+            } else {
+              showToast("Failed to start repair process", "error");
+            }
+          } catch (err) {
+            showToast("Server error: " + err.message, "error");
+          }
+        }
+      }
 
-  // Funzione per eliminare manga con firma crittografica
-  async function deleteManga(id) {
-    if (!userWallet) {
-      showToast("Connect Wallet first", "error");
-      return;
-    }
-    
-    if (confirm(`ARE YOU SURE? This action requires MetaMask signature to delete Asset #${id}`)) {
+      function clearImportUrls() {
+        document.getElementById('import-url').value = '';
+        showToast("URLs cleared 🧹", "info");
+      }
+
+      function openPreview(id) {
+        const m = allManga.find(item => item.id === id);
+        if (!m) return;
+        
+        const imageUrl = m.immagine ? `${PROXY_URL}${encodeURIComponent(m.immagine)}` : '';
+        document.getElementById('preview-img').src = imageUrl;
+        document.getElementById('preview-title').innerText = m.titolo;
+        document.getElementById('preview-artist').innerText = m.artisti?.nome || 'UNKNOWN';
+        document.getElementById('preview-id').innerText = `ID: ${m.id}`;
+        document.getElementById('preview-lang').innerText = m.lingua || 'JP';
+        document.getElementById('preview-link').onclick = () => window.open(m.url_origine, '_blank');
+        
+        const isVisible = m.visible !== false;
+        const visibilityEl = document.getElementById('preview-visibility');
+        visibilityEl.innerText = isVisible ? 'PUBLIC' : 'HIDDEN';
+        visibilityEl.className = `text-[8px] font-black uppercase px-2 py-1 rounded-full ${isVisible ? 'bg-green-500/20 text-green-500' : 'bg-red-500/20 text-red-500'}`;
+        
+        const toggleBtn = document.getElementById('preview-toggle-visibility');
+        toggleBtn.innerText = isVisible ? 'HIDE ASSET 👻' : 'PUBLISH ASSET 🌐';
+        toggleBtn.onclick = () => toggleVisibility(m.id, !isVisible);
+        
+        const tagsContainer = document.getElementById('preview-tags');
+        if (m.tags && m.tags.length > 0) {
+          tagsContainer.innerHTML = m.tags.map(t => 
+            `<span class="bg-zinc-900 text-gray-400 text-[9px] font-bold px-3 py-1.5 rounded-full border border-zinc-800 uppercase hover:border-orange-500 transition-colors">${t.nome}</span>`
+          ).join('');
+        } else {
+          tagsContainer.innerHTML = '<span class="text-gray-700 italic text-[10px]">No tags found 🏷️</span>';
+        }
+        
+        const pagesContainer = document.getElementById('preview-pages');
+        if (m.numero_pagine) {
+          pagesContainer.innerHTML = `<span class="text-orange-500 text-xs">${m.numero_pagine} pages 📄</span>`;
+        } else {
+          pagesContainer.innerHTML = '';
+        }
+        
+        document.getElementById('preview-modal').classList.remove('hidden');
+      }
+
+      function closePreview() { 
+        document.getElementById('preview-modal').classList.add('hidden'); 
+      }
+      
+      function openEdit(id) {
+        const m = allManga.find(item => item.id === id);
+        if (!m) return;
+        
+        document.getElementById('edit-id').value = m.id;
+        document.getElementById('edit-title').value = m.titolo;
+        document.getElementById('edit-author').value = m.artisti?.nome || '';
+        document.getElementById('edit-modal').classList.remove('hidden');
+      }
+      
+      function closeEdit() { 
+        document.getElementById('edit-modal').classList.add('hidden'); 
+      }
+
+      async function saveEdit() {
+        const id = document.getElementById('edit-id').value;
+        if (!userWallet) {
+          showToast("Connect Wallet first", "error");
+          return;
+        }
+        
         try {
             const provider = new ethers.providers.Web3Provider(window.ethereum);
             const signer = provider.getSigner();
             
-            const message = `KitsuneMojo Admin: Delete Request for Asset ID ${id}`;
+            const message = `KitsuneMojo Admin: Update Request for Asset ID ${id}`;
             const signature = await signer.signMessage(message);
-
+            
             const res = await fetch(`${BASE_ADMIN_URL}/manga/${id}`, {
-                method: 'DELETE',
-                headers: { 
-                    'Content-Type': 'application/json',
-                    'x-wallet': userWallet,
-                    'x-signature': signature,
-                    'x-message': message
-                }
+              method: 'PUT',
+              headers: { 
+                'Content-Type': 'application/json',
+                'x-wallet': userWallet,
+                'x-signature': signature,
+                'x-message': message
+              },
+              body: JSON.stringify({
+                titolo: document.getElementById('edit-title').value,
+                artista_id: null,
+              }),
             });
-
+            
             if (res.ok) {
-                showToast(`Asset ${id} deleted successfully`, "success");
-                await loadDashboard(); // Ricarica immediatamente
+              closeEdit();
+              showToast("Asset updated successfully ✅", "success");
+              await loadDashboard();
             } else {
-                const data = await res.json();
-                showToast("Error: " + (data.message || "Unauthorized"), "error");
+              const data = await res.json();
+              showToast("Update failed: " + (data.message || "Unknown error"), "error");
             }
         } catch (err) {
-            console.error("Operation cancelled or failed", err);
-            if (err.code === 4001) {
-              showToast("Signature denied by user", "error");
-            } else {
-              showToast("Server Connection Error: " + err.message, "error");
-            }
+            showToast("Update failed: " + err.message, "error");
         }
-    }
-  }
-
-  // Funzione per riparazione globale
-  async function runGlobalMaintenance() {
-    if (!userWallet) {
-      showToast("Connect Wallet first", "error");
-      return;
-    }
-    
-    if (confirm("⚠️ INITIATE GLOBAL LINK REPAIR? This will check all images and attempt to fix broken links.")) {
-      try {
-        const res = await fetch(`${BASE_ADMIN_URL}/maintenance/repair-all`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' }
-        });
-        
-        if (res.ok) {
-          showToast("Repair process started in background", "success");
-        } else {
-          showToast("Failed to start repair process", "error");
-        }
-      } catch (err) {
-        showToast("Server error: " + err.message, "error");
       }
-    }
-  }
 
-  // Funzione per pulire textarea
-  function clearImportUrls() {
-    document.getElementById('import-url').value = '';
-  }
-
-  function openPreview(id) {
-    const m = allManga.find(item => item.id === id);
-    if (!m) return;
-    
-    document.getElementById('preview-img').src = PROXY_URL + encodeURIComponent(m.immagine || '');
-    document.getElementById('preview-title').innerText = m.titolo;
-    document.getElementById('preview-artist').innerText = m.artisti?.nome || 'UNKNOWN';
-    document.getElementById('preview-id').innerText = `ID: ${m.id}`;
-    document.getElementById('preview-lang').innerText = m.lingua || 'JP';
-    document.getElementById('preview-link').onclick = () => window.open(m.url_origine, '_blank');
-    
-    const isVisible = m.visible !== false;
-    const visibilityEl = document.getElementById('preview-visibility');
-    visibilityEl.innerText = isVisible ? 'PUBLIC' : 'HIDDEN';
-    visibilityEl.className = `text-[8px] font-black uppercase px-2 py-1 rounded-full ${isVisible ? 'bg-green-500/20 text-green-500' : 'bg-red-500/20 text-red-500'}`;
-    
-    const toggleBtn = document.getElementById('preview-toggle-visibility');
-    toggleBtn.innerText = isVisible ? 'HIDE ASSET' : 'PUBLISH ASSET';
-    toggleBtn.onclick = () => toggleVisibility(m.id, !isVisible);
-    
-    const tagsContainer = document.getElementById('preview-tags');
-    if (m.tags && m.tags.length > 0) {
-      tagsContainer.innerHTML = m.tags.map(t => 
-        `<span class="bg-zinc-900 text-gray-400 text-[9px] font-bold px-3 py-1.5 rounded-full border border-zinc-800 uppercase hover:border-orange-500 transition-colors">${t.nome}</span>`
-      ).join('');
-    } else {
-      tagsContainer.innerHTML = '<span class="text-gray-700 italic text-[10px]">No tags found</span>';
-    }
-    
-    const pagesContainer = document.getElementById('preview-pages');
-    if (m.numero_pagine) {
-      pagesContainer.innerHTML = `<span class="text-orange-500 text-xs">${m.numero_pagine} pages</span>`;
-    } else {
-      pagesContainer.innerHTML = '';
-    }
-    
-    document.getElementById('preview-modal').classList.remove('hidden');
-  }
-
-  function closePreview() { 
-    document.getElementById('preview-modal').classList.add('hidden'); 
-  }
-  
-  function openEdit(id) {
-    const m = allManga.find(item => item.id === id);
-    if (!m) return;
-    
-    document.getElementById('edit-id').value = m.id;
-    document.getElementById('edit-title').value = m.titolo;
-    document.getElementById('edit-author').value = m.artisti?.nome || '';
-    document.getElementById('edit-modal').classList.remove('hidden');
-  }
-  
-  function closeEdit() { 
-    document.getElementById('edit-modal').classList.add('hidden'); 
-  }
-
-  async function saveEdit() {
-    const id = document.getElementById('edit-id').value;
-    if (!userWallet) {
-      showToast("Connect Wallet first", "error");
-      return;
-    }
-    
-    try {
-        const provider = new ethers.providers.Web3Provider(window.ethereum);
-        const signer = provider.getSigner();
+      function importManga() {
+        const urlInput = document.getElementById('import-url');
+        const urls = urlInput.value.trim();
         
-        const message = `KitsuneMojo Admin: Update Request for Asset ID ${id}`;
-        const signature = await signer.signMessage(message);
-        
-        const res = await fetch(`${BASE_ADMIN_URL}/manga/${id}`, {
-          method: 'PUT',
-          headers: { 
-            'Content-Type': 'application/json',
-            'x-wallet': userWallet,
-            'x-signature': signature,
-            'x-message': message
-          },
-          body: JSON.stringify({
-            titolo: document.getElementById('edit-title').value,
-            artista_id: null,
-          }),
-        });
-        
-        if (res.ok) {
-          closeEdit();
-          showToast("Asset updated successfully", "success");
-          await loadDashboard(); // Ricarica immediatamente
-        } else {
-          const data = await res.json();
-          showToast("Update failed: " + (data.message || "Unknown error"), "error");
+        if (!urls) {
+            showToast("Inserisci almeno un URL per iniziare l'ingestione", "error");
+            return;
         }
-    } catch (err) {
-        showToast("Update failed: " + err.message, "error");
-    }
-  }
 
-  function importManga() {
-    const urlInput = document.getElementById('import-url');
-    const urls = urlInput.value.trim();
-    
-    if (!urls) {
-        showToast("Inserisci almeno un URL per iniziare l'ingestione", "error");
-        return;
-    }
-
-    // Salva i link per la pagina Bulk
-    localStorage.setItem('kitsune_pending_urls', urls);
-    
-    const btn = document.getElementById('import-btn');
-    const originalText = btn.innerHTML;
-    btn.innerHTML = `<i class="fas fa-spinner animate-spin mr-2"></i> Launching Ingestion...`;
-    
-    // Reindirizza alla pagina dedicata
-    setTimeout(() => {
-        window.location.href = 'bulk-import.html';
-    }, 800);
-  }
-
-  function filterManga() {
-    applyFiltersAndSort();
-  }
-  
-  function sortManga() {
-    const sortSelect = document.getElementById('sort-select');
-    currentSort = sortSelect.value;
-    applyFiltersAndSort();
-  }
-  
-  function filterByVisibility(type) {
-    currentFilter = type;
-    
-    // Aggiorna classi attive
-    document.getElementById('filter-all').classList.toggle('active', type === 'all');
-    document.getElementById('filter-public').classList.toggle('active', type === 'public');
-    document.getElementById('filter-private').classList.toggle('active', type === 'private');
-    
-    applyFiltersAndSort();
-  }
-  
-  function refreshDashboard() {
-    showToast("Refreshing dashboard...", "info");
-    loadDashboard();
-  }
-  
-  function exportData() {
-    if (!allManga || allManga.length === 0) {
-      showToast("No data to export", "error");
-      return;
-    }
-    
-    const dataStr = JSON.stringify(allManga, null, 2);
-    const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
-    
-    const exportFileDefaultName = `kitsune-export-${new Date().toISOString().split('T')[0]}.json`;
-    
-    const linkElement = document.createElement('a');
-    linkElement.setAttribute('href', dataUri);
-    linkElement.setAttribute('download', exportFileDefaultName);
-    linkElement.click();
-    
-    showToast("Data exported successfully", "success");
-  }
-  
-  function toggleFilters() {
-    const filterSection = document.getElementById('filter-section');
-    filterSection.classList.toggle('hidden');
-  }
-
-  // Inizializzazione
-  window.addEventListener('load', async () => {
-    // Prova a caricare sessione salvata
-    const savedWallet = loadWalletSession();
-    
-    if (savedWallet && window.ethereum) {
-      try {
-        const accounts = await window.ethereum.request({ method: 'eth_accounts' });
-        if (accounts.length > 0 && accounts[0].toLowerCase() === savedWallet) {
-          await connectWallet();
-        } else {
-          localStorage.removeItem(STORAGE_KEY);
-          document.getElementById('access-level').innerText = "Connect Wallet to Access Control Panel";
-        }
-      } catch (e) {
-        console.error('Auto-connect failed', e);
-        document.getElementById('access-level').innerText = "Connect Wallet to Access Control Panel";
+        // Salva i link per la pagina Bulk
+        localStorage.setItem('kitsune_pending_urls', urls);
+        
+        const btn = document.getElementById('import-btn');
+        btn.innerHTML = `<i class="fas fa-spinner animate-spin mr-2"></i> Launching Ingestion...`;
+        
+        // Reindirizza alla pagina dedicata
+        setTimeout(() => {
+            window.location.href = 'bulk-import.html';
+        }, 800);
       }
-    } else {
-      document.getElementById('access-level').innerText = "Connect Wallet to Access Control Panel";
-    }
-  });
 
-  // Auto-refresh ogni 30 secondi (opzionale)
-  if (autoRefreshEnabled) {
-    setInterval(() => {
-      if (userWallet) {
+      function filterManga() {
+        applyFiltersAndSort();
+      }
+      
+      function sortManga() {
+        const sortSelect = document.getElementById('sort-select');
+        currentSort = sortSelect.value;
+        applyFiltersAndSort();
+      }
+      
+      function filterByVisibility(type) {
+        currentFilter = type;
+        
+        // Aggiorna classi attive
+        document.getElementById('filter-all').classList.toggle('active', type === 'all');
+        document.getElementById('filter-public').classList.toggle('active', type === 'public');
+        document.getElementById('filter-private').classList.toggle('active', type === 'private');
+        
+        applyFiltersAndSort();
+      }
+      
+      function refreshDashboard() {
+        showToast("Refreshing dashboard... 🔄", "info");
         loadDashboard();
       }
-    }, 30000);
+      
+      function exportData() {
+        if (!allManga || allManga.length === 0) {
+          showToast("No data to export", "error");
+          return;
+        }
+        
+        const dataStr = JSON.stringify(allManga, null, 2);
+        const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+        
+        const exportFileDefaultName = `kitsune-export-${new Date().toISOString().split('T')[0]}.json`;
+        
+        const linkElement = document.createElement('a');
+        linkElement.setAttribute('href', dataUri);
+        linkElement.setAttribute('download', exportFileDefaultName);
+        linkElement.click();
+        
+        showToast("Data exported successfully 📥", "success");
+      }
+      
+      function toggleFilters() {
+        const filterSection = document.getElementById('filter-section');
+        filterSection.classList.toggle('hidden');
+      }
+
+      // Inizializzazione
+      window.addEventListener('load', async () => {
+        // Prova a caricare sessione salvata
+        const savedWallet = loadWalletSession();
+        
+        if (savedWallet && window.ethereum) {
+          try {
+            const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+            if (accounts.length > 0 && accounts[0].toLowerCase() === savedWallet) {
+              await connectWallet();
+            } else {
+              clearWalletSession();
+              document.getElementById('access-level').innerText = "Connect Wallet to Access Control Panel 🔐";
+            }
+          } catch (e) {
+            console.error('Auto-connect failed', e);
+            document.getElementById('access-level').innerText = "Connect Wallet to Access Control Panel 🔐";
+          }
+        } else {
+          document.getElementById('access-level').innerText = "Connect Wallet to Access Control Panel 🔐";
+        }
+      });
+
+      // Auto-refresh ogni 30 secondi (opzionale)
+      if (autoRefreshEnabled) {
+        setInterval(() => {
+          if (userWallet) {
+            loadDashboard();
+          }
+        }, 30000);
+      }
+      function tryAlternateServers(img, originalUrl) {
+  const servers = ['i3', 'i7', 'i1', 'i2', 't', 't3', 'i5', 'i', 'i8'];
+  const currentServer = img.src.match(/https:\/\/(i\d+|t\d*)\./)?.[1] || 'i3';
+  const currentIndex = servers.indexOf(currentServer);
+  
+  if (currentIndex < servers.length - 1) {
+    const nextServer = servers[currentIndex + 1];
+    img.src = originalUrl.replace(/https:\/\/i\d+\./, `https://${nextServer}.`);
+  } else {
+    img.src = 'https://placehold.co/48x64/0a0a0a/f6851b?text=NO';
   }
-</script>
+}
+    </script>
   </body>
 </html>

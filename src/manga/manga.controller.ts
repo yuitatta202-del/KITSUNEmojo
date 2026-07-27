@@ -16,26 +16,40 @@ import {
   HttpStatus,
   Logger,
 } from '@nestjs/common';
+import { MangaService, HomeMangaResponse, QuickStats } from './manga.service';
 import { SupabaseService } from '../supabase/supabase.service';
 import * as ethers from 'ethers';
 import axios, { AxiosError } from 'axios';
 import type { Response } from 'express';
 
-// Interfacce per il tipo di ritorno
-interface MangaWithRelations {
+// ============================================
+// INTERFACCE LOCALI
+// ============================================
+
+interface AdminMangaResponse {
   id: number;
   titolo: string;
   immagine: string | null;
-  lingua: string;
+  lingua: string | null;
   numero_pagine: number | null;
   created_at: string;
   url_origine: string | null;
-  pagine: string[];
-  visible: boolean;
+  pagine: any[];
+  visible: boolean | null;
   categoria_id: number | null;
   artista_id: number | null;
-  artisti: { nome: string } | null;
-  categorie: { nome: string } | null;
+  up_votes: number | null;
+  down_votes: number | null;
+  artisti: { id: number; nome: string; counter: number | null } | null;
+  categorie: { id: number; nome: string; counter: number | null } | null;
+  tags?: { id: number; nome: string; counter: number | null }[];
+}
+
+interface AdminMangaListResponse {
+  data: AdminMangaResponse[];
+  total: number;
+  publicCount: number;
+  hiddenCount: number;
 }
 
 interface TrackEventData {
@@ -66,24 +80,52 @@ export class MangaController {
   private readonly adminWallet =
     '0x2aab3b9458cbb3709c6a131b1d9a7a0eb111efbc'.toLowerCase();
 
-  constructor(private readonly supabaseService: SupabaseService) {}
+  constructor(
+    private readonly mangaService: MangaService,
+    private readonly supabaseService: SupabaseService,
+  ) {}
+
+  // ============================================
+  // ENDPOINT PUBBLICI PER LA HOME PAGE
+  // ============================================
 
   /**
-   * 1. Recupera tutti i manga per l'interfaccia admin
+   * GET /admin/manga
+   * Recupera tutti i manga visibili per la homepage (versione leggera)
    */
   @Get('manga')
-  async getAll(): Promise<MangaWithRelations[]> {
+  async getHomeManga(): Promise<HomeMangaResponse[]> {
     try {
-      // Usa il metodo tipizzato del service
-      return await this.supabaseService.getAllMangaAdmin();
+      return await this.mangaService.getHomeManga();
     } catch (err) {
-      this.logger.error('Errore durante il recupero dei manga admin', err);
-      throw new InternalServerErrorException('Impossibile recuperare i manga.');
+      this.logger.error('Errore recupero manga homepage:', err);
+      throw new HttpException(
+        'Errore nel recupero dei manga',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     }
   }
 
   /**
-   * 2. PROXY IMMAGINI
+   * GET /admin/quick-stats
+   * Recupera statistiche rapide per la homepage
+   */
+  @Get('quick-stats')
+  async getQuickStats(): Promise<QuickStats> {
+    try {
+      return await this.mangaService.getQuickStats();
+    } catch (err) {
+      this.logger.error('Errore recupero quick stats:', err);
+      throw new HttpException(
+        'Errore nel recupero delle statistiche',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  /**
+   * GET /admin/proxy
+   * Proxy per immagini (evita CORS)
    */
   @Get('proxy')
   async proxyImage(@Query('url') imageUrl: string, @Res() res: Response) {
@@ -127,8 +169,69 @@ export class MangaController {
     }
   }
 
+  // ============================================
+  // ENDPOINT PROTETTI PER ADMIN (con autenticazione)
+  // ============================================
+
   /**
-   * 3. Update Visibilità
+   * GET /admin/manga/details
+   * Recupera tutti i manga per admin (versione completa con conteggi)
+   *
+   * ⚠️ IMPORTANTE: Questo endpoint DEVE essere PRIMA di /manga/:id
+   */
+  @Get('manga/details')
+  async getAllForAdmin(): Promise<AdminMangaListResponse> {
+    try {
+      this.logger.log('📋 Richiesta a /admin/manga/details');
+      const result = await this.mangaService.getAllForAdminWithCount();
+
+      return {
+        data: result.data as AdminMangaResponse[],
+        total: result.total,
+        publicCount: result.publicCount,
+        hiddenCount: result.hiddenCount,
+      };
+    } catch (err) {
+      this.logger.error('Errore durante il recupero dei manga admin', err);
+      throw new InternalServerErrorException('Impossibile recuperare i manga.');
+    }
+  }
+
+  /**
+   * GET /admin/manga/:id
+   * Recupera dettagli di un manga specifico
+   *
+   * ⚠️ IMPORTANTE: Questo endpoint DEVE essere DOPO /manga/details
+   */
+  @Get('manga/:id')
+  async getMangaById(@Param('id') id: string): Promise<HomeMangaResponse> {
+    try {
+      const mangaId = parseInt(id, 10);
+      if (isNaN(mangaId)) {
+        throw new HttpException('ID non valido', HttpStatus.BAD_REQUEST);
+      }
+
+      const manga = await this.mangaService.getMangaById(mangaId);
+
+      if (!manga) {
+        throw new HttpException('Manga non trovato', HttpStatus.NOT_FOUND);
+      }
+
+      return manga;
+    } catch (err) {
+      this.logger.error(`Errore recupero manga ${id}`, err);
+      if (err instanceof HttpException) {
+        throw err;
+      }
+      throw new InternalServerErrorException(
+        'Impossibile recuperare il manga.',
+      );
+    }
+  }
+
+  /**
+   * PUT /admin/manga/:id/visibility
+   * Aggiorna la visibilità di un manga (richiede firma)
    */
   @Put('manga/:id/visibility')
   async updateVisibility(
@@ -143,11 +246,13 @@ export class MangaController {
       throw new UnauthorizedException('Dati di sicurezza incompleti.');
     }
 
+    // Verifica wallet autorizzato
     if (wallet.toLowerCase() !== this.adminWallet) {
       throw new ForbiddenException('Accesso negato: Wallet non autorizzato.');
     }
 
     try {
+      // Verifica firma crittografica
       const recoveredAddress = ethers.verifyMessage(message, signature);
       if (recoveredAddress.toLowerCase() !== wallet.toLowerCase()) {
         throw new UnauthorizedException('Firma crittografica non valida.');
@@ -158,8 +263,7 @@ export class MangaController {
         throw new HttpException('ID non valido', HttpStatus.BAD_REQUEST);
       }
 
-      // Usa il metodo del service
-      const success = await this.supabaseService.updateMangaVisibility(
+      const success = await this.mangaService.updateVisibility(
         mangaId,
         visible,
       );
@@ -189,7 +293,8 @@ export class MangaController {
   }
 
   /**
-   * 4. ELIMINAZIONE MANGA
+   * DELETE /admin/manga/:id
+   * Elimina un manga (richiede firma)
    */
   @Delete('manga/:id')
   async deleteManga(
@@ -203,11 +308,13 @@ export class MangaController {
       throw new UnauthorizedException('Protocollo di sicurezza incompleto.');
     }
 
+    // Verifica wallet autorizzato
     if (wallet.toLowerCase() !== this.adminWallet) {
       throw new ForbiddenException('Accesso negato: Wallet non autorizzato.');
     }
 
     try {
+      // Verifica firma crittografica
       const recoveredAddress = ethers.verifyMessage(message, signature);
 
       if (recoveredAddress.toLowerCase() !== wallet.toLowerCase()) {
@@ -219,13 +326,9 @@ export class MangaController {
         throw new HttpException('ID non valido', HttpStatus.BAD_REQUEST);
       }
 
-      // Elimina il manga
-      const { error } = await this.supabaseService.supabase
-        .from('manga')
-        .delete()
-        .eq('id', mangaId);
+      const success = await this.mangaService.deleteManga(mangaId);
 
-      if (error) {
+      if (!success) {
         throw new InternalServerErrorException(
           "Errore durante l'eliminazione.",
         );
@@ -246,7 +349,8 @@ export class MangaController {
   }
 
   /**
-   * 5. Tracking Eventi Analytics
+   * POST /admin/track/event
+   * Traccia eventi analytics
    */
   @Post('track/event')
   async trackEvent(
@@ -258,54 +362,21 @@ export class MangaController {
         return { success: false, error: 'Tipo evento mancante' };
       }
 
-      const { error } = await this.supabaseService.supabase
-        .from('analytics_events')
-        .insert({
-          event_type: data.type,
-          manga_id: data.mangaId || null,
-          wallet_address: data.wallet || 'guest',
-          user_agent: agent || null,
-          path: null,
-        });
+      const success = await this.supabaseService.trackEvent({
+        eventType: data.type,
+        mangaId: data.mangaId,
+        wallet: data.wallet,
+        userAgent: agent,
+      });
 
-      if (error) {
-        this.logger.error('Errore tracking evento', error);
-        return { success: false };
+      if (!success) {
+        return { success: false, error: 'Errore durante il tracking' };
       }
 
       return { success: true };
     } catch (err) {
       this.logger.error('Eccezione tracking evento', err);
-      return { success: false };
-    }
-  }
-
-  /**
-   * 6. Ottieni dettagli di un manga specifico
-   */
-  @Get('manga/:id')
-  async getMangaById(@Param('id') id: string): Promise<MangaWithRelations> {
-    try {
-      const mangaId = parseInt(id, 10);
-      if (isNaN(mangaId)) {
-        throw new HttpException('ID non valido', HttpStatus.BAD_REQUEST);
-      }
-
-      const manga = await this.supabaseService.getMangaById(mangaId);
-
-      if (!manga) {
-        throw new HttpException('Manga non trovato', HttpStatus.NOT_FOUND);
-      }
-
-      return manga;
-    } catch (err) {
-      this.logger.error(`Errore recupero manga ${id}`, err);
-      if (err instanceof HttpException) {
-        throw err;
-      }
-      throw new InternalServerErrorException(
-        'Impossibile recuperare il manga.',
-      );
+      return { success: false, error: 'Eccezione durante il tracking' };
     }
   }
 }

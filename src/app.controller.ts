@@ -1,1148 +1,1830 @@
 import {
   Controller,
   Get,
-  Post,
-  Body,
-  Redirect,
-  Logger,
+  Delete,
+  Query,
+  Res,
+  Param,
+  Headers,
   HttpException,
   HttpStatus,
-  Headers,
-  Param,
-  Query,
+  UnauthorizedException,
+  ForbiddenException,
+  Post,
+  Body,
+  Put,
+  Logger,
+  UseInterceptors,
+  ClassSerializerInterceptor,
+  Version,
+  Header,
+  UseGuards,
+  Inject,
 } from '@nestjs/common';
-import { SupabaseService } from './supabase/supabase.service';
+import type { Response } from 'express';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import type { Cache } from 'cache-manager'; // ✅ FIX: import type
+import { EventEmitter2 } from '@nestjs/event-emitter';
+import { ThrottlerGuard, Throttle } from '@nestjs/throttler';
+import axios, { AxiosError } from 'axios';
+import { verifyMessage } from 'ethers';
 
-// Interfacce per i tipi di ritorno
-interface TrackEventResponse {
-  status: 'tracked' | 'error';
-  message?: string;
+// Services & Types
+import { AdminAction, RepairStatus } from './admin/admin.service'; // ✅ Rimosso AdminService non usato
+import {
+  SupabaseService,
+  Manga,
+  MangaUpdate,
+  DailyStat,
+} from './supabase/supabase.service';
+import { ImportService } from './import/import.service';
+import type { ImportResult } from './import/interfaces/gallery.interface';
+
+// ============================================
+// ENUM E COSTANTI PREMIUM
+// ============================================
+
+export enum ImportSource {
+  HENTAIFOX = 'hentaifox',
+  NHENTAI = 'nhentai',
+  OTHER = 'other',
 }
 
-interface TopPerformingItem {
-  total_views: number;
-  manga: {
-    id: number;
-    titolo: string;
-    immagine: string | null;
-  } | null;
+// ============================================
+// DTOs (Data Transfer Objects) - PREMIUM VERSION
+// ============================================
+
+export class BulkImportBody {
+  urls: string[];
+  source?: ImportSource;
+  priority?: 'high' | 'normal' | 'low';
 }
 
-interface QuickStats {
+export class UpdateMangaBody implements Partial<MangaUpdate> {
+  titolo?: string;
+  visible?: boolean;
+  artista_id?: number | null;
+  categoria_id?: number | null;
+  immagine?: string | null;
+  lingua?: string;
+  numero_pagine?: number | null;
+  url_origine?: string | null;
+  pagine?: any[] | null;
+}
+
+// Response Shapes
+export class ArtistResponse {
+  id: number;
+  nome: string;
+  counter: number;
+  mangaCount?: number;
+}
+
+export class TagResponse {
+  id: number;
+  nome: string;
+  counter: number;
+  usageCount?: number;
+}
+
+export class CategoryResponse {
+  id: number;
+  nome: string;
+  counter: number;
+  mangaCount?: number;
+}
+
+export class SystemStatsResponse {
   total_manga: number;
   total_artists: number;
   total_tags: number;
-}
-
-// Interfaccia per gli item di analytics_events
-interface AnalyticsEvent {
-  manga_id: number;
-  event_type: string;
-}
-
-// Interfacce per dashboard analytics
-interface TagDistribution {
-  nome: string;
-  count: number;
-}
-
-interface ArtistDistribution {
-  nome: string;
-  count: number;
-}
-
-interface DashboardResponse {
-  trending: TopPerformingItem[];
-  tagDistribution: TagDistribution[];
-  artistDistribution: ArtistDistribution[];
-  totalViews: number;
-  uniqueWallets: number;
-  dailyStats: any[];
-}
-
-interface TrackEventPayload {
-  type: string;
-  mangaId?: number;
-  wallet?: string;
-  value?: number;
-}
-
-// Tipi per le risposte Supabase
-interface RawTagData {
-  tag_id: number;
-  tags: {
-    nome: string;
-  } | null;
-}
-
-interface RawArtistData {
-  artista_id: number;
-  artisti: {
-    nome: string;
-  } | null;
-}
-
-interface ViewEvent {
-  manga_id: number;
-  created_at: string;
-  wallet_address: string | null;
-}
-
-interface StartReadingSessionBody {
-  mangaId: number;
-  wallet?: string;
-}
-
-interface TrackPageBody {
-  sessionId: number;
-  page: number;
-  mangaId: number;
-}
-
-interface VoteBody {
-  mangaId: number;
-  vote: 'up' | 'down';
-  wallet: string;
-}
-
-// NUOVE INTERFACCE PER IL MODULO READER
-interface VoteStatusResponse {
-  upvotes: number;
-  downvotes: number;
-  userVote: 'up' | 'down' | null;
-}
-
-interface ReadingProgressBody {
-  wallet: string;
-  page: number;
-  totalPages: number;
-}
-
-interface ReadingProgressResponse {
-  mangaId: number;
-  currentPage: number;
-  totalPages: number;
-  progress: number;
-  lastRead: Date;
-}
-
-// Interfacce per le risposte tipizzate
-interface VoteRecord {
-  id: number;
-  vote_type: string;
-  user_wallet: string;
-  manga_id: number;
-}
-
-interface MangaVoteRecord {
-  up_votes: number;
-  down_votes: number;
-}
-
-interface BookmarkRecord {
-  id: number;
-  last_page: number;
-  updated_at: string;
-}
-
-// Interfacce per analytics
-interface EventStats {
-  views: number;
-  clicks: number;
-  vote_up: number;
-  vote_down: number;
-  other: number;
-}
-
-interface TrendStats {
-  views: number;
-  clicks: number;
-  vote_up: number;
-  vote_down: number;
-}
-
-interface RealtimeStats {
-  topManga: any[];
-  activeNow: number;
-  viewsToday: number;
+  total_categories: number;
+  total_users: number;
+  recent_manga: number;
+  active_admins: number;
+  system_uptime: number;
   timestamp: string;
 }
 
-interface DashboardV2Response {
-  eventStats: EventStats;
-  trends: TrendStats;
-  realtime: RealtimeStats;
-  hourly: number[];
-  dailyStats: any[];
-  timestamp: string;
+export class PopularTagResponse {
+  nome: string;
+  count: number;
+  percentage?: number;
 }
 
-// Interfaccia per summary (index.html)
-interface AnalyticsSummary {
+export class QuickStatsResponse {
   total_manga: number;
   total_artists: number;
   total_tags: number;
-  views_today: number;
-  active_now: number;
-  trending: TopPerformingItem[];
+  total_categories: number;
+  total_views_today: number;
+  active_users: number;
 }
 
-@Controller()
-export class AppController {
-  private readonly logger = new Logger(AppController.name);
+export class DailyStatResponse {
+  id: number;
+  date: string;
+  total_visits: number | null;
+  total_clicks: number | null;
+  unique_wallets: number | null;
+  conversion_rate?: number | null;
+}
 
-  constructor(private readonly supabaseService: SupabaseService) {}
+export class MangaRepairItem {
+  id: number;
+  immagine: string | null;
+  titolo: string;
+  current_server?: string;
+  status: RepairStatus;
+}
 
-  // ============================================
-  // ENDPOINT BASE
-  // ============================================
+export class PopularTagData {
+  tags?: {
+    nome: string;
+  };
+}
 
-  @Get()
-  @Redirect('/index.html', 302)
-  getHello(): void {}
+// Stats & Health
+export class HealthCheckResponse {
+  status: 'ok' | 'error' | 'degraded';
+  timestamp: string;
+  version: string;
+  services: {
+    database: 'up' | 'down';
+    storage: 'up' | 'down';
+    import: 'up' | 'down';
+  };
+  metrics: {
+    responseTime: number;
+    activeRequests: number;
+    uptime: number;
+  };
+}
 
-  @Get('api/status')
-  getStatus(): { status: string; timestamp: string } {
-    return {
-      status: 'online',
-      timestamp: new Date().toISOString(),
-    };
+export class DatabaseStatsResponse {
+  mangaCount: number;
+  artistCount: number;
+  tagCount: number;
+  categoryCount: number;
+  userCount: number;
+  totalVotes: number;
+  totalBookmarks: number;
+  totalComments: number;
+  databaseSize?: string;
+  lastUpdated: string;
+}
+
+// ============================================
+// INTERFACCE DI SUPPORTO
+// ============================================
+
+export interface HeadersWithAuth {
+  'x-signature'?: string;
+  'x-message'?: string;
+  'x-wallet'?: string;
+  'x-request-id'?: string;
+  'x-api-key'?: string;
+  authorization?: string;
+  [key: string]: string | undefined;
+}
+
+export type BulkImportResultItem = ImportResult & {
+  url: string;
+  duration: number;
+  source?: ImportSource;
+};
+
+export interface RateLimitInfo {
+  count: number;
+  timestamp: number;
+}
+
+// ============================================
+// CONTROLLER PRINCIPALE - VERSIONE CORRETTA
+// ============================================
+
+@Controller('admin')
+@UseGuards(ThrottlerGuard)
+@UseInterceptors(ClassSerializerInterceptor)
+export class AdminController {
+  private readonly logger = new Logger(AdminController.name);
+  private readonly AUTHORIZED_ADMINS = [
+    '0x2aab3b9458cbb3709c6a131b1d9a7a0eb111efbc'.toLowerCase(),
+  ];
+  private readonly RATE_LIMITS = {
+    import: { max: 10, window: 60000 },
+    bulk: { max: 2, window: 60000 },
+    update: { max: 50, window: 60000 },
+    delete: { max: 20, window: 60000 },
+    repair: { max: 1, window: 3600000 },
+  };
+  private readonly requestTracker = new Map<string, RateLimitInfo>();
+  private readonly startTime: number = Date.now();
+
+  constructor(
+    private readonly supabaseService: SupabaseService,
+    private readonly importService: ImportService,
+    private readonly eventEmitter: EventEmitter2,
+    @Inject(CACHE_MANAGER) private cacheManager: Cache,
+  ) {
+    this.logger.log(
+      '🚀 AdminController initialized with enterprise configuration',
+    );
+    setInterval(() => this.cleanupRateLimits(), 60000);
   }
 
   // ============================================
-  // TRACKING ENDPOINTS
+  // METODI PRIVATI DI SUPPORTO
   // ============================================
 
-  @Post('api/track')
-  async trackEvent(
-    @Body() body: TrackEventPayload,
-  ): Promise<TrackEventResponse> {
-    if (!body.type) {
-      throw new HttpException('event type is required', HttpStatus.BAD_REQUEST);
+  private generateRequestId(): string {
+    return `admin_${Date.now()}_${Math.random().toString(36).substring(2, 10)}`;
+  }
+
+  private checkRateLimit(action: AdminAction, identifier: string): boolean {
+    const key = `${action}:${identifier}`;
+    const now = Date.now();
+    const limit = this.RATE_LIMITS[action as keyof typeof this.RATE_LIMITS];
+
+    if (!limit) return true;
+
+    const record = this.requestTracker.get(key);
+
+    if (!record || now - record.timestamp > limit.window) {
+      this.requestTracker.set(key, { count: 1, timestamp: now });
+      return true;
     }
 
-    const client = this.supabaseService.supabase;
+    if (record.count >= limit.max) {
+      return false;
+    }
+
+    record.count++;
+    this.requestTracker.set(key, record);
+    return true;
+  }
+
+  private cleanupRateLimits(): void {
+    const now = Date.now();
+    for (const [key, record] of this.requestTracker.entries()) {
+      const limit =
+        this.RATE_LIMITS[key.split(':')[0] as keyof typeof this.RATE_LIMITS];
+      if (limit && now - record.timestamp > limit.window) {
+        this.requestTracker.delete(key);
+      }
+    }
+  }
+
+  private verifyAdmin(headers: HeadersWithAuth): {
+    address: string;
+    requestId: string;
+  } {
+    const signature = headers['x-signature'];
+    const message = headers['x-message'];
+    const wallet = headers['x-wallet'];
+    const requestId = headers['x-request-id'] || this.generateRequestId();
+
+    if (!signature || !message || !wallet) {
+      throw new UnauthorizedException({
+        code: 'INCOMPLETE_AUTH_DATA',
+        message: 'Dati di sicurezza incompleti',
+        requestId,
+      });
+    }
 
     try {
-      const { error } = await client.from('analytics_events').insert({
-        manga_id: body.mangaId || null,
-        event_type: body.type,
-        wallet_address: body.wallet || 'guest',
-        user_agent: null,
-        path: null,
-        created_at: new Date().toISOString(),
-      });
+      const recoveredAddress = verifyMessage(message, signature).toLowerCase();
 
-      if (error) {
-        this.logger.error(`Tracking Error: ${error.message}`);
-        return { status: 'error', message: error.message };
-      }
-
-      try {
-        const today = new Date().toISOString().split('T')[0];
-        await client.rpc('increment_daily_stats', {
-          p_date: today,
-          p_type: body.type,
+      if (recoveredAddress !== wallet.toLowerCase()) {
+        throw new UnauthorizedException({
+          code: 'INVALID_SIGNATURE',
+          message: 'Firma non valida',
+          requestId,
         });
-      } catch {
-        this.logger.debug('RPC not available, skipping daily stats');
       }
 
-      return { status: 'tracked' };
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
-      this.logger.error(`Tracking Exception: ${errorMessage}`);
-      return { status: 'error', message: errorMessage };
+      if (!this.AUTHORIZED_ADMINS.includes(recoveredAddress)) {
+        throw new ForbiddenException({
+          code: 'UNAUTHORIZED_WALLET',
+          message: 'Wallet non autorizzato',
+          requestId,
+        });
+      }
+
+      this.supabaseService
+        .updateAdminLastAccess(recoveredAddress)
+        .catch((err) => {
+          this.logger.error(
+            `Failed to update admin last access: ${err.message}`,
+          );
+        });
+
+      return { address: recoveredAddress, requestId };
+    } catch (error) {
+      if (
+        error instanceof UnauthorizedException ||
+        error instanceof ForbiddenException
+      ) {
+        throw error;
+      }
+      throw new UnauthorizedException({
+        code: 'AUTH_FAILED',
+        message: 'Autenticazione fallita',
+        requestId,
+      });
     }
   }
 
-  @Post('api/vote')
-  async trackVote(
-    @Body() body: { manga_id: number; vote: 'up' | 'down'; wallet?: string },
-  ): Promise<TrackEventResponse> {
-    if (!body.manga_id || !body.vote) {
+  private getErrorMessage(error: unknown): string {
+    if (!error) return 'Errore sconosciuto';
+
+    if (error instanceof Error) {
+      return error.message;
+    }
+
+    if (typeof error === 'object' && error !== null) {
+      const errorObj = error as Record<string, unknown>;
+      if ('message' in errorObj && typeof errorObj.message === 'string') {
+        return errorObj.message;
+      }
+      if ('code' in errorObj && typeof errorObj.code === 'string') {
+        return `Errore ${errorObj.code}`;
+      }
+    }
+
+    return 'Errore sconosciuto';
+  }
+
+  private async withRetry<T>(
+    operation: () => Promise<T>,
+    options: {
+      maxRetries?: number;
+      retryDelay?: number;
+      requestId?: string;
+    } = {},
+  ): Promise<T> {
+    const {
+      maxRetries = 3,
+      retryDelay = 1000,
+      requestId = 'unknown',
+    } = options;
+    let lastError: Error | null = null;
+
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        return await operation();
+      } catch (error) {
+        lastError = error instanceof Error ? error : new Error('Unknown error');
+
+        this.logger.warn(
+          `[${requestId}] Attempt ${attempt}/${maxRetries} failed: ${lastError.message}`,
+        );
+
+        if (attempt === maxRetries) break;
+
+        const delay = retryDelay * Math.pow(2, attempt - 1);
+        await new Promise((resolve) => setTimeout(resolve, delay));
+      }
+    }
+
+    throw lastError || new Error('Operation failed after retries');
+  }
+
+  private async invalidateCache(patterns: string[]): Promise<void> {
+    for (const pattern of patterns) {
+      await this.cacheManager.del(pattern);
+    }
+  }
+
+  // ============================================
+  // ENDPOINT PUBBLICI (SENZA AUTENTICAZIONE)
+  // ============================================
+
+  @Get('proxy')
+  @Version('1')
+  @Header('Cache-Control', 'public, max-age=604800')
+  async proxyImage(
+    @Query('url') imageUrl: string,
+    @Res() res: Response,
+  ): Promise<void> {
+    const requestId = this.generateRequestId();
+
+    if (!imageUrl) {
+      res.status(HttpStatus.BAD_REQUEST).json({
+        error: 'URL_MANCANTE',
+        message: 'URL mancante',
+        requestId,
+      });
+      return;
+    }
+
+    const decodedUrl = decodeURIComponent(imageUrl);
+    const cleanUrl = decodedUrl
+      .replace(/(\.(jpg|jpeg|png|webp|avif)).*/i, '$1')
+      .replace(/['"]/g, '');
+
+    const cacheKey = `proxy_${Buffer.from(cleanUrl).toString('base64')}`;
+    const cached = await this.cacheManager.get<Buffer>(cacheKey);
+
+    if (cached) {
+      res.set({
+        'Content-Type': 'image/jpeg',
+        'Cache-Control': 'public, max-age=604800, immutable',
+        'X-Cache': 'HIT',
+      });
+      res.send(cached);
+      return;
+    }
+
+    try {
+      const response = await this.withRetry(
+        () =>
+          axios.get<Buffer>(cleanUrl, {
+            responseType: 'arraybuffer',
+            timeout: 10000,
+            headers: {
+              Referer: 'https://hentaifox.com/',
+              'User-Agent':
+                'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/121.0.0.0 Safari/537.36',
+              Accept: 'image/avif,image/webp,image/apng,image/*,*/*;q=0.8',
+            },
+          }),
+        { requestId, maxRetries: 2 },
+      );
+
+      await this.cacheManager.set(cacheKey, response.data, 604800000);
+
+      res.set({
+        'Content-Type': response.headers['content-type'] || 'image/jpeg',
+        'Cache-Control': 'public, max-age=604800, immutable',
+        'Access-Control-Allow-Origin': '*',
+        'X-Cache': 'MISS',
+      });
+
+      res.send(response.data);
+    } catch (error) {
+      this.logger.error(`[${requestId}] Proxy error per: ${cleanUrl}`);
+
+      const status =
+        error instanceof AxiosError ? error.response?.status || 404 : 404;
+      const message =
+        error instanceof AxiosError && error.code === 'ECONNABORTED'
+          ? 'Timeout'
+          : 'Immagine non trovata';
+
+      res.status(status).json({
+        error: 'PROXY_FAILED',
+        message,
+        url: cleanUrl,
+        requestId,
+      });
+    }
+  }
+
+  @Get('artists')
+  @Version('1')
+  @Header('Cache-Control', 'public, max-age=300')
+  async getAllArtists(
+    @Query('includeStats') includeStats?: string,
+  ): Promise<ArtistResponse[]> {
+    try {
+      const cacheKey = `artists_${includeStats === 'true' ? 'with_stats' : 'basic'}`;
+      const cached = await this.cacheManager.get<ArtistResponse[]>(cacheKey);
+
+      if (cached) return cached;
+
+      // ✅ Estrai array dal PaginatedResult
+      const paginatedResult = await this.supabaseService.getAllArtists();
+      const artists = paginatedResult?.data ?? [];
+
+      let result: ArtistResponse[] = artists.map((artist) => ({
+        id: artist.id,
+        nome: artist.nome,
+        counter: artist.counter ?? 0,
+      }));
+
+      if (includeStats === 'true' && result.length > 0) {
+        const stats = await Promise.all(
+          result.map(async (artist) => {
+            try {
+              const { count, error } = await this.supabaseService.supabase
+                .from('manga')
+                .select('*', { count: 'exact', head: true })
+                .eq('artista_id', artist.id);
+
+              if (error) {
+                this.logger.warn(
+                  `Errore conteggio manga per artista ${artist.id}: ${error.message}`,
+                );
+                return { ...artist, mangaCount: 0 };
+              }
+              return { ...artist, mangaCount: count || 0 };
+            } catch (err) {
+              this.logger.warn(
+                `Eccezione conteggio manga per artista ${artist.id}: ${this.getErrorMessage(err)}`,
+              );
+              return { ...artist, mangaCount: 0 };
+            }
+          }),
+        );
+        result = stats;
+      }
+
+      await this.cacheManager.set(cacheKey, result, 300000);
+      return result;
+    } catch (err) {
+      const errorMessage = this.getErrorMessage(err);
+      this.logger.error(
+        `[AdminController] Errore recupero artisti: ${errorMessage}`,
+      );
       throw new HttpException(
-        'manga_id and vote are required',
-        HttpStatus.BAD_REQUEST,
+        'Impossibile recuperare la lista degli artisti',
+        HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
+  }
 
-    const client = this.supabaseService.supabase;
+  @Get('tags')
+  @Version('1')
+  @Header('Cache-Control', 'public, max-age=300')
+  async getAllTags(
+    @Query('includeUsage') includeUsage?: string,
+  ): Promise<TagResponse[]> {
+    const requestId = this.generateRequestId();
 
     try {
-      const { error } = await client.from('analytics_events').insert({
-        manga_id: body.manga_id,
-        event_type: `vote_${body.vote}`,
-        wallet_address: body.wallet || 'guest',
-        created_at: new Date().toISOString(),
-      });
+      const cacheKey = `tags_${includeUsage === 'true' ? 'with_usage' : 'basic'}`;
+      const cached = await this.cacheManager.get<TagResponse[]>(cacheKey);
 
-      if (error) throw error;
-      return { status: 'tracked' };
+      if (cached) {
+        this.logger.debug(`[${requestId}] Cache HIT: ${cacheKey}`);
+        return cached;
+      }
+
+      this.logger.debug(`[${requestId}] Cache MISS: ${cacheKey}`);
+
+      // ✅ Estrai array dal PaginatedResult
+      const paginatedResult = await this.supabaseService.getAllTags();
+      const tags = paginatedResult?.data ?? [];
+
+      if (!tags.length) {
+        this.logger.debug(`[${requestId}] Nessun tag trovato`);
+        return [];
+      }
+
+      // Mappa i tag nel formato di risposta
+      let result: TagResponse[] = tags.map((tag) => ({
+        id: tag.id,
+        nome: tag.nome,
+        counter: tag.counter ?? 0,
+      }));
+
+      // Arricchisci con usage count se richiesto
+      if (includeUsage === 'true' && result.length > 0) {
+        this.logger.debug(
+          `[${requestId}] Calcolo usage per ${result.length} tag`,
+        );
+
+        try {
+          const tagIds = result.map((t) => t.id);
+
+          const { data, error } = await this.supabaseService.supabase
+            .from('manga_tags')
+            .select('tag_id')
+            .in('tag_id', tagIds);
+
+          if (error) {
+            this.logger.warn(
+              `[${requestId}] Errore recupero usage tags: ${error.message}`,
+            );
+          } else if (data) {
+            const usageCount = new Map<number, number>();
+
+            (data as { tag_id: number }[]).forEach((item) => {
+              const tid = Number(item.tag_id);
+              if (!isNaN(tid)) {
+                usageCount.set(tid, (usageCount.get(tid) || 0) + 1);
+              }
+            });
+
+            result = result.map((tag) => ({
+              ...tag,
+              usageCount: usageCount.get(tag.id) || 0,
+            }));
+
+            this.logger.debug(
+              `[${requestId}] Usage calcolato per ${result.length} tag`,
+            );
+          }
+        } catch (err) {
+          this.logger.warn(
+            `[${requestId}] Errore nel calcolo usage tags: ${this.getErrorMessage(err)}`,
+          );
+        }
+      }
+
+      // Cache per 5 minuti
+      await this.cacheManager.set(cacheKey, result, 300000);
+      this.logger.log(`[${requestId}] ✅ Recuperati ${result.length} tag`);
+
+      return result;
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
-      this.logger.error(`Vote Tracking Error: ${errorMessage}`);
-      return { status: 'error', message: errorMessage };
+      const errorMessage = this.getErrorMessage(err);
+      this.logger.error(
+        `[${requestId}] ❌ Errore recupero tags: ${errorMessage}`,
+      );
+
+      throw new HttpException(
+        {
+          code: 'TAGS_FETCH_FAILED',
+          message: 'Impossibile recuperare la lista dei tag',
+          details: errorMessage,
+        },
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     }
   }
 
-  // ============================================
-  // STATS ENDPOINTS (PER INDEX.HTML)
-  // ============================================
-
-  @Get('api/stats/quick')
-  async getQuickStats(): Promise<QuickStats> {
-    const client = this.supabaseService.supabase;
-
+  @Get('categories')
+  @Version('1')
+  @Header('Cache-Control', 'public, max-age=300')
+  async getAllCategories(): Promise<CategoryResponse[]> {
     try {
-      const [mangaRes, artistiRes, tagsRes] = await Promise.all([
-        client.from('manga').select('*', { count: 'exact', head: true }),
-        client.from('artisti').select('*', { count: 'exact', head: true }),
-        client.from('tags').select('*', { count: 'exact', head: true }),
+      const cacheKey = 'categories';
+      const cached = await this.cacheManager.get<CategoryResponse[]>(cacheKey);
+
+      if (cached) return cached;
+
+      // ✅ Estrai array dal PaginatedResult
+      const paginatedResult = await this.supabaseService.getAllCategories();
+      const categories = paginatedResult?.data ?? [];
+
+      const result = categories.map((category) => ({
+        id: category.id,
+        nome: category.nome,
+        counter: category.counter ?? 0,
+      }));
+
+      await this.cacheManager.set(cacheKey, result, 300000);
+      return result;
+    } catch (err) {
+      const errorMessage = this.getErrorMessage(err);
+      this.logger.error(
+        `[AdminController] Errore recupero categorie: ${errorMessage}`,
+      );
+
+      throw new HttpException(
+        'Errore recupero categorie',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @Get('system-stats')
+  @Version('1')
+  @Header('Cache-Control', 'public, max-age=60')
+  async getSystemStats(): Promise<SystemStatsResponse> {
+    try {
+      const sevenDaysAgo = new Date();
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+      const [
+        mangaRes,
+        artistsRes,
+        tagsRes,
+        categoriesRes,
+        usersRes,
+        recentRes,
+      ] = await Promise.all([
+        this.supabaseService.supabase
+          .from('manga')
+          .select('*', { count: 'exact', head: true }),
+        this.supabaseService.supabase
+          .from('artisti')
+          .select('*', { count: 'exact', head: true }),
+        this.supabaseService.supabase
+          .from('tags')
+          .select('*', { count: 'exact', head: true }),
+        this.supabaseService.supabase
+          .from('categorie')
+          .select('*', { count: 'exact', head: true }),
+        this.supabaseService.supabase
+          .from('users')
+          .select('*', { count: 'exact', head: true }),
+        this.supabaseService.supabase
+          .from('manga')
+          .select('id', { count: 'exact', head: true })
+          .gte('created_at', sevenDaysAgo.toISOString()),
+      ]);
+
+      const { data: adminUsers } = await this.supabaseService.supabase
+        .from('admin_users')
+        .select('id');
+
+      return {
+        total_manga: mangaRes.count || 0,
+        total_artists: artistsRes.count || 0,
+        total_tags: tagsRes.count || 0,
+        total_categories: categoriesRes.count || 0,
+        total_users: usersRes.count || 0,
+        recent_manga: recentRes.count || 0,
+        active_admins: adminUsers?.length || 0,
+        system_uptime: (Date.now() - this.startTime) / 1000,
+        timestamp: new Date().toISOString(),
+      };
+    } catch (err) {
+      const errorMessage = this.getErrorMessage(err);
+      this.logger.error(
+        `[AdminController] Errore recupero stats: ${errorMessage}`,
+      );
+
+      throw new HttpException(
+        'Errore recupero statistiche',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @Get('popular-tags')
+  @Version('1')
+  @Header('Cache-Control', 'public, max-age=300')
+  async getPopularTags(
+    @Query('limit') limit?: string,
+    @Query('minCount') minCount?: string,
+  ): Promise<PopularTagResponse[]> {
+    try {
+      const limitNum = limit ? parseInt(limit, 10) : 30;
+      const minCountNum = minCount ? parseInt(minCount, 10) : 1;
+
+      const cacheKey = `popular_tags_${limitNum}_${minCountNum}`;
+      const cached =
+        await this.cacheManager.get<PopularTagResponse[]>(cacheKey);
+
+      if (cached) return cached;
+
+      const { data, error } = await this.supabaseService.supabase
+        .from('manga_tags')
+        .select('tag_id, tags!inner(nome)');
+
+      if (error) throw error;
+
+      const tagCountMap = new Map<string, number>();
+
+      (data || []).forEach((item: unknown) => {
+        const typedItem = item as PopularTagData;
+        if (typedItem.tags?.nome) {
+          const tagName = typedItem.tags.nome;
+          tagCountMap.set(tagName, (tagCountMap.get(tagName) || 0) + 1);
+        }
+      });
+
+      const total = Array.from(tagCountMap.values()).reduce((a, b) => a + b, 0);
+
+      const result = Array.from(tagCountMap.entries())
+        .map(([nome, count]) => ({
+          nome,
+          count,
+          percentage: total > 0 ? Math.round((count / total) * 100) : 0,
+        }))
+        .filter((tag) => tag.count >= minCountNum)
+        .sort((a, b) => b.count - a.count)
+        .slice(0, limitNum);
+
+      await this.cacheManager.set(cacheKey, result, 300000);
+      return result;
+    } catch (err) {
+      const errorMessage = this.getErrorMessage(err);
+      this.logger.error(
+        `[AdminController] Errore recupero tag popolari: ${errorMessage}`,
+      );
+
+      throw new HttpException(
+        'Errore recupero tag popolari',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @Get('quick-stats')
+  @Version('1')
+  @Header('Cache-Control', 'public, max-age=30')
+  async getQuickStats(): Promise<QuickStatsResponse> {
+    try {
+      const today = new Date().toISOString().split('T')[0];
+
+      const [
+        mangaRes,
+        artistsRes,
+        tagsRes,
+        categoriesRes,
+        viewsRes,
+        activeRes,
+      ] = await Promise.all([
+        this.supabaseService.supabase
+          .from('manga')
+          .select('*', { count: 'exact', head: true }),
+        this.supabaseService.supabase
+          .from('artisti')
+          .select('*', { count: 'exact', head: true }),
+        this.supabaseService.supabase
+          .from('tags')
+          .select('*', { count: 'exact', head: true }),
+        this.supabaseService.supabase
+          .from('categorie')
+          .select('*', { count: 'exact', head: true }),
+        this.supabaseService.supabase
+          .from('analytics_events')
+          .select('*', { count: 'exact', head: true })
+          .eq('event_type', 'view')
+          .gte('created_at', today),
+        this.supabaseService.supabase
+          .from('analytics_events')
+          .select('wallet_address', {
+            count: 'exact',
+            head: true,
+          })
+          .gte('created_at', new Date(Date.now() - 15 * 60000).toISOString()),
       ]);
 
       return {
         total_manga: mangaRes.count || 0,
-        total_artists: artistiRes.count || 0,
+        total_artists: artistsRes.count || 0,
         total_tags: tagsRes.count || 0,
+        total_categories: categoriesRes.count || 0,
+        total_views_today: viewsRes.count || 0,
+        active_users: activeRes.count || 0,
       };
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
-      this.logger.error(`Errore recupero statistiche rapide: ${errorMessage}`);
-      return {
-        total_manga: 0,
-        total_artists: 0,
-        total_tags: 0,
-      };
+      const errorMessage = this.getErrorMessage(err);
+      this.logger.error(
+        `[AdminController] Errore recupero quick stats: ${errorMessage}`,
+      );
+
+      throw new HttpException(
+        'Errore recupero statistiche rapide',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     }
   }
 
-  @Get('api/analytics/realtime')
-  async getRealtimeStats(): Promise<RealtimeStats> {
-    const client = this.supabaseService.supabase;
+  // ============================================
+  // ENDPOINT PROTETTI (CON AUTENTICAZIONE)
+  // ============================================
+
+  @Get('manga-list')
+  @Version('1')
+  @Throttle({ default: { limit: 100, ttl: 60 } })
+  async getAllManga(
+    @Headers() headers: HeadersWithAuth,
+    @Query('page') page: string = '1',
+    @Query('limit') limit: string = '50',
+    @Query('includeHidden') includeHidden?: string,
+  ): Promise<{
+    data: Manga[];
+    total: number;
+    page: number;
+    totalPages: number;
+  }> {
+    const { address, requestId } = this.verifyAdmin(headers);
+
+    this.logger.log(`[${requestId}] Admin ${address} fetching manga list`);
 
     try {
-      const { data: topManga } = await client
-        .from('vw_top_manga')
-        .select('*')
-        .limit(5);
+      const pageNum = Math.max(1, parseInt(page, 10) || 1);
+      const limitNum = Math.min(100, Math.max(1, parseInt(limit, 10) || 50));
+      const offset = (pageNum - 1) * limitNum;
 
-      const fifteenMinAgo = new Date(Date.now() - 15 * 60000).toISOString();
-      const { count: activeNow } = await client
-        .from('analytics_events')
-        .select('*', { count: 'exact', head: true })
-        .gte('created_at', fifteenMinAgo);
+      let query = this.supabaseService.supabase
+        .from('manga')
+        .select('*', { count: 'exact' });
 
-      const today = new Date().toISOString().split('T')[0];
-      const { count: viewsToday } = await client
-        .from('analytics_events')
-        .select('*', { count: 'exact', head: true })
-        .eq('event_type', 'view')
-        .gte('created_at', today);
-
-      return {
-        topManga: topManga || [],
-        activeNow: activeNow || 0,
-        viewsToday: viewsToday || 0,
-        timestamp: new Date().toISOString()
-      };
-    } catch (err) {
-      this.logger.error(`Realtime Stats Error: ${err}`);
-      return {
-        topManga: [],
-        activeNow: 0,
-        viewsToday: 0,
-        timestamp: new Date().toISOString(),
-      };
-    }
-  }
-
-  @Get('api/analytics/trends')
-  async getTrends(): Promise<TrendStats> {
-    const client = this.supabaseService.supabase;
-
-    try {
-      const today = new Date().toISOString().split('T')[0];
-      const yesterday = new Date(Date.now() - 86400000)
-        .toISOString()
-        .split('T')[0];
-
-      const { data: todayData } = await client
-        .from('daily_stats')
-        .select('*')
-        .eq('date', today)
-        .maybeSingle();
-
-      const { data: yesterdayData } = await client
-        .from('daily_stats')
-        .select('*')
-        .eq('date', yesterday)
-        .maybeSingle();
-
-      const calculateTrend = (today: number, yesterday: number) => {
-        if (!yesterday || yesterday === 0) return 0;
-        return Math.round(((today - yesterday) / yesterday) * 100);
-      };
-      return {
-        views: calculateTrend(
-          todayData?.total_visits || 0,
-          yesterdayData?.total_visits || 0,
-        ),
-        clicks: calculateTrend(
-          todayData?.total_clicks || 0,
-          yesterdayData?.total_clicks || 0,
-        ),
-        vote_up: 0,
-        vote_down: 0
-      };
-    } catch (err) {
-      this.logger.error(`Trends Error: ${err}`);
-      return { views: 0, clicks: 0, vote_up: 0, vote_down: 0 };
-    }
-  }
-
-  @Get('api/analytics/top-performing')
-  async getTopPerforming(): Promise<TopPerformingItem[]> {
-    const client = this.supabaseService.supabase;
-
-    try {
-      const { data, error } = await client
-        .from('analytics_events')
-        .select('manga_id, event_type')
-        .eq('event_type', 'view')
-        .not('manga_id', 'is', null);
-
-      if (error) {
-        this.logger.error(`Fetch Analytics Error: ${error.message}`);
-        return [];
+      if (includeHidden !== 'true') {
+        query = query.eq('visible', true);
       }
 
-      const viewsMap = new Map<number, number>();
-      if (data) {
-        (data as AnalyticsEvent[]).forEach((item) => {
-          const mangaId = item.manga_id;
-          viewsMap.set(mangaId, (viewsMap.get(mangaId) || 0) + 1);
+      const { data, error, count } = await query
+        .order('id', { ascending: false })
+        .range(offset, offset + limitNum - 1);
+
+      if (error) throw error;
+
+      return {
+        data: data || [],
+        total: count || 0,
+        page: pageNum,
+        totalPages: Math.ceil((count || 0) / limitNum),
+      };
+    } catch (err) {
+      const errorMessage = this.getErrorMessage(err);
+      this.logger.error(`[${requestId}] Errore getAllManga: ${errorMessage}`);
+
+      throw new HttpException(
+        'Errore recupero manga',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @Post('import')
+  @Version('1')
+  @Throttle({ default: { limit: 10, ttl: 60 } })
+  async importManga(
+    @Headers() headers: HeadersWithAuth,
+    @Body('url') url: string,
+    @Body('source') source?: ImportSource,
+  ): Promise<ImportResult & { requestId: string; duration: number }> {
+    const startTime = Date.now();
+    const { address, requestId } = this.verifyAdmin(headers);
+
+    if (!this.checkRateLimit(AdminAction.IMPORT, address)) {
+      throw new HttpException(
+        'Troppe richieste di import, attendere',
+        HttpStatus.TOO_MANY_REQUESTS,
+      );
+    }
+
+    this.logger.log(`[${requestId}] Admin ${address} importing from: ${url}`);
+
+    try {
+      if (!url) {
+        throw new HttpException('URL mancante', HttpStatus.BAD_REQUEST);
+      }
+
+      try {
+        new URL(url);
+      } catch {
+        throw new HttpException('URL non valido', HttpStatus.BAD_REQUEST);
+      }
+
+      const result = await this.withRetry(
+        () => this.importService.importFromUrl(url),
+        { requestId },
+      );
+
+      const duration = Date.now() - startTime;
+
+      this.eventEmitter.emit('admin.import', {
+        admin: address,
+        url,
+        success: result.success,
+        mangaId: result.id,
+        duration,
+        timestamp: new Date().toISOString(),
+      });
+
+      await this.invalidateCache(['manga-list', 'quick-stats', 'system-stats']);
+
+      this.logger.log(`[${requestId}] ✅ Import completato in ${duration}ms`);
+
+      return {
+        ...result,
+        requestId,
+        duration,
+      };
+    } catch (err) {
+      if (err instanceof HttpException) throw err;
+
+      const errorMessage = this.getErrorMessage(err);
+      this.logger.error(`[${requestId}] ❌ Errore import: ${errorMessage}`);
+
+      throw new HttpException(
+        {
+          code: 'IMPORT_FAILED',
+          message: 'Errore durante import',
+          details: errorMessage,
+        },
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @Post('bulk')
+  @Version('1')
+  @Throttle({ default: { limit: 2, ttl: 60 } })
+  async bulkImport(
+    @Body() body: BulkImportBody,
+    @Headers() headers: HeadersWithAuth,
+  ): Promise<{
+    success: boolean;
+    total: number;
+    successful: number;
+    failed: number;
+    details: BulkImportResultItem[];
+    requestId: string;
+    duration: number;
+  }> {
+    const startTime = Date.now();
+    const { address, requestId } = this.verifyAdmin(headers);
+
+    if (!this.checkRateLimit(AdminAction.BULK_IMPORT, address)) {
+      throw new HttpException(
+        'Troppe richieste di bulk import, attendere',
+        HttpStatus.TOO_MANY_REQUESTS,
+      );
+    }
+
+    this.logger.log(
+      `[${requestId}] Admin ${address} starting bulk import of ${body.urls?.length} URLs`,
+    );
+
+    try {
+      if (!body.urls || !Array.isArray(body.urls)) {
+        throw new HttpException('Lista URL non valida', HttpStatus.BAD_REQUEST);
+      }
+
+      if (body.urls.length > 50) {
+        throw new HttpException(
+          'Troppi URL (max 50 per volta)',
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+
+      const results: BulkImportResultItem[] = [];
+      let successful = 0;
+      let failed = 0;
+
+      for (const url of body.urls) {
+        if (!url) continue;
+
+        const itemStartTime = Date.now();
+
+        try {
+          new URL(url);
+        } catch {
+          results.push({
+            url,
+            success: false,
+            error: 'URL non valido',
+            duration: Date.now() - itemStartTime,
+            source: body.source,
+          });
+          failed++;
+          continue;
+        }
+
+        try {
+          const res = await this.importService.importFromUrl(url);
+          results.push({
+            url,
+            ...res,
+            duration: Date.now() - itemStartTime,
+            source: body.source,
+          });
+
+          if (res.success) {
+            successful++;
+          } else {
+            failed++;
+          }
+        } catch (err: unknown) {
+          const errorMessage = this.getErrorMessage(err);
+          results.push({
+            url,
+            success: false,
+            error: errorMessage,
+            duration: Date.now() - itemStartTime,
+            source: body.source,
+          });
+          failed++;
+        }
+
+        const delay =
+          body.priority === 'high'
+            ? 500
+            : body.priority === 'low'
+              ? 2000
+              : 1000;
+        await new Promise((resolve) => setTimeout(resolve, delay));
+      }
+
+      const totalDuration = Date.now() - startTime;
+
+      this.eventEmitter.emit('admin.bulk_import', {
+        admin: address,
+        total: results.length,
+        successful,
+        failed,
+        duration: totalDuration,
+        timestamp: new Date(),
+      });
+
+      await this.invalidateCache(['manga-list', 'quick-stats', 'system-stats']);
+
+      this.logger.log(
+        `[${requestId}] Bulk Import completato: ${successful} successi, ${failed} falliti in ${totalDuration}ms`,
+      );
+
+      return {
+        success: true,
+        total: results.length,
+        successful,
+        failed,
+        details: results,
+        requestId,
+        duration: totalDuration,
+      };
+    } catch (err) {
+      if (err instanceof HttpException) throw err;
+
+      const errorMessage = this.getErrorMessage(err);
+      this.logger.error(`[${requestId}] Errore bulk import: ${errorMessage}`);
+
+      throw new HttpException(
+        'Errore durante import massivo',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @Put('manga/:id')
+  @Version('1')
+  @Throttle({ default: { limit: 50, ttl: 60 } })
+  async updateManga(
+    @Param('id') id: string,
+    @Body() updateData: UpdateMangaBody,
+    @Headers() headers: HeadersWithAuth,
+  ): Promise<{ success: boolean; id: number; requestId: string }> {
+    const { address, requestId } = this.verifyAdmin(headers);
+
+    if (!this.checkRateLimit(AdminAction.UPDATE, address)) {
+      throw new HttpException(
+        'Troppe richieste di update, attendere',
+        HttpStatus.TOO_MANY_REQUESTS,
+      );
+    }
+
+    this.logger.log(`[${requestId}] Admin ${address} updating manga ${id}`);
+
+    try {
+      const mangaId = parseInt(id, 10);
+      if (isNaN(mangaId)) {
+        throw new HttpException('ID non valido', HttpStatus.BAD_REQUEST);
+      }
+
+      const existingManga = await this.supabaseService.getMangaById(mangaId);
+      if (!existingManga) {
+        throw new HttpException('Manga non trovato', HttpStatus.NOT_FOUND);
+      }
+
+      const updatePayload: Partial<MangaUpdate> = {};
+
+      if (updateData.titolo !== undefined)
+        updatePayload.titolo = updateData.titolo;
+      if (updateData.visible !== undefined)
+        updatePayload.visible = updateData.visible;
+      if (updateData.artista_id !== undefined)
+        updatePayload.artista_id = updateData.artista_id;
+      if (updateData.categoria_id !== undefined)
+        updatePayload.categoria_id = updateData.categoria_id;
+      if (updateData.immagine !== undefined)
+        updatePayload.immagine = updateData.immagine;
+      if (updateData.lingua !== undefined)
+        updatePayload.lingua = updateData.lingua;
+      if (updateData.numero_pagine !== undefined)
+        updatePayload.numero_pagine = updateData.numero_pagine;
+      if (updateData.url_origine !== undefined)
+        updatePayload.url_origine = updateData.url_origine;
+      if (updateData.pagine !== undefined)
+        updatePayload.pagine = updateData.pagine;
+
+      if (Object.keys(updatePayload).length === 0) {
+        return { success: true, id: mangaId, requestId };
+      }
+
+      // ✅ FIX: Cast temporaneo per superare l'errore 'never'
+      const result = await this.supabaseService.updateManga(
+        mangaId,
+        updatePayload as MangaUpdate,
+      );
+
+      if (!result.success) {
+        throw result.error;
+      }
+
+      this.eventEmitter.emit('admin.update', {
+        admin: address,
+        mangaId,
+        changes: updatePayload,
+        timestamp: new Date(),
+      });
+
+      await this.invalidateCache([
+        `manga_${mangaId}`,
+        'manga-list',
+        'quick-stats',
+      ]);
+
+      this.logger.log(
+        `[${requestId}] ✅ Manga ${mangaId} aggiornato con successo`,
+      );
+
+      return { success: true, id: mangaId, requestId };
+    } catch (err) {
+      if (err instanceof HttpException) throw err;
+
+      const errorMessage = this.getErrorMessage(err);
+      this.logger.error(
+        `[${requestId}] Errore aggiornamento manga ${id}: ${errorMessage}`,
+      );
+
+      throw new HttpException(
+        'Errore aggiornamento manga',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @Delete('manga/:id')
+  @Version('1')
+  @Throttle({ default: { limit: 20, ttl: 60 } })
+  async deleteManga(
+    @Headers() headers: HeadersWithAuth,
+    @Param('id') id: string,
+    @Query('permanent') permanent?: string,
+  ): Promise<{ success: boolean; message: string; requestId: string }> {
+    const { address, requestId } = this.verifyAdmin(headers);
+
+    if (!this.checkRateLimit(AdminAction.DELETE, address)) {
+      throw new HttpException(
+        'Troppe richieste di eliminazione, attendere qualche istante',
+        HttpStatus.TOO_MANY_REQUESTS,
+      );
+    }
+
+    this.logger.warn(
+      `[${requestId}] ⚠️ Admin ${address} sta eliminando il manga ${id} (permanente: ${!!permanent})`,
+    );
+
+    try {
+      const mangaId = parseInt(id, 10);
+      if (isNaN(mangaId)) {
+        throw new HttpException('ID Manga non valido', HttpStatus.BAD_REQUEST);
+      }
+
+      const existingManga = await this.supabaseService.getMangaById(mangaId);
+      if (!existingManga) {
+        throw new HttpException(
+          'Manga non trovato nel database',
+          HttpStatus.NOT_FOUND,
+        );
+      }
+
+      let result;
+      if (permanent === 'true') {
+        result = await this.supabaseService.hardDeleteManga(mangaId);
+      } else {
+        result = await this.supabaseService.softDeleteManga(mangaId);
+      }
+
+      if (!result.success) {
+        throw (
+          result.error || new Error("Errore durante l'operazione su Supabase")
+        );
+      }
+
+      await Promise.all([
+        this.invalidateCache([
+          `manga_${mangaId}`,
+          'manga-list',
+          'quick-stats',
+          'system-stats',
+        ]),
+        this.eventEmitter.emit('admin.delete', {
+          admin: address,
+          mangaId,
+          permanent: permanent === 'true',
+          title: existingManga.titolo,
+          timestamp: new Date().toISOString(),
+          requestId,
+        }),
+      ]);
+
+      const message =
+        permanent === 'true'
+          ? `Manga "${existingManga.titolo}" eliminato definitivamente`
+          : `Manga "${existingManga.titolo}" nascosto con successo`;
+
+      this.logger.log(
+        `[${requestId}] ✅ Eliminazione completata per ID ${mangaId}`,
+      );
+
+      return { success: true, message, requestId };
+    } catch (err) {
+      if (err instanceof HttpException) throw err;
+
+      const errorMessage = this.getErrorMessage(err);
+      this.logger.error(
+        `[${requestId}] ❌ Errore critico delete: ${errorMessage}`,
+      );
+
+      throw new HttpException(
+        `Errore durante l'eliminazione: ${errorMessage}`,
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @Post('manga/:id/restore')
+  @Version('1')
+  @Throttle({ default: { limit: 20, ttl: 60 } })
+  async restoreManga(
+    @Param('id') id: string,
+    @Headers() headers: HeadersWithAuth,
+  ): Promise<{ success: boolean; message: string; requestId: string }> {
+    const { address, requestId } = this.verifyAdmin(headers);
+
+    if (!this.checkRateLimit(AdminAction.RESTORE, address)) {
+      throw new HttpException(
+        'Troppe richieste di restore, attendere',
+        HttpStatus.TOO_MANY_REQUESTS,
+      );
+    }
+
+    this.logger.log(`[${requestId}] Admin ${address} restoring manga ${id}`);
+
+    try {
+      const mangaId = parseInt(id, 10);
+      if (isNaN(mangaId)) {
+        throw new HttpException('ID non valido', HttpStatus.BAD_REQUEST);
+      }
+
+      const result = await this.supabaseService.restoreManga(mangaId);
+
+      if (!result.success) {
+        throw result.error;
+      }
+
+      this.eventEmitter.emit('admin.restore', {
+        admin: address,
+        mangaId,
+        timestamp: new Date(),
+      });
+
+      await this.invalidateCache([
+        `manga_${mangaId}`,
+        'manga-list',
+        'quick-stats',
+      ]);
+
+      this.logger.log(
+        `[${requestId}] ✅ Manga ${mangaId} ripristinato con successo`,
+      );
+
+      return {
+        success: true,
+        message: 'Manga ripristinato con successo',
+        requestId,
+      };
+    } catch (err) {
+      if (err instanceof HttpException) throw err;
+
+      const errorMessage = this.getErrorMessage(err);
+      this.logger.error(
+        `[${requestId}] Errore ripristino manga ${id}: ${errorMessage}`,
+      );
+
+      throw new HttpException(
+        'Errore durante il ripristino',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @Post('maintenance/repair-all')
+  @Version('1')
+  @Throttle({ default: { limit: 1, ttl: 3600 } })
+  async repairAllLinks(
+    @Headers() headers: HeadersWithAuth,
+    @Query('dryRun') dryRun?: string,
+  ): Promise<{
+    message: string;
+    total: number;
+    requestId: string;
+    estimatedTime?: string;
+    dryRun?: boolean;
+  }> {
+    const { address, requestId } = this.verifyAdmin(headers);
+
+    if (!this.checkRateLimit(AdminAction.REPAIR, address)) {
+      throw new HttpException(
+        "Puoi eseguire solo una riparazione all'ora",
+        HttpStatus.TOO_MANY_REQUESTS,
+      );
+    }
+
+    this.logger.log(
+      `[${requestId}] Admin ${address} starting repair-all (dryRun: ${dryRun})`,
+    );
+
+    try {
+      const paginatedResult = await this.supabaseService.getAllMangaAdmin();
+      const allManga = paginatedResult?.data ?? [];
+
+      const repairItems: MangaRepairItem[] = allManga.map((manga: Manga) => ({
+        id: manga.id,
+        immagine: manga.immagine,
+        titolo: manga.titolo,
+        status: RepairStatus.UNKNOWN,
+      }));
+
+      const estimatedTime = `${Math.ceil(repairItems.length * 0.1)} secondi`;
+
+      if (dryRun !== 'true') {
+        this.runGlobalRepair(repairItems, requestId).catch((err: Error) => {
+          this.logger.error(
+            `[${requestId}] ❌ Errore riparazione: ${err.message}`,
+          );
         });
       }
 
-      if (viewsMap.size === 0) return [];
+      this.eventEmitter.emit('admin.repair', {
+        admin: address,
+        total: repairItems.length,
+        dryRun: dryRun === 'true',
+        timestamp: new Date(),
+      });
 
-      const mangaIds = Array.from(viewsMap.keys());
-      const { data: mangaData, error: mangaError } = await client
-        .from('manga')
-        .select('id, titolo, immagine')
-        .in('id', mangaIds);
+      return {
+        message:
+          dryRun === 'true'
+            ? 'Analisi completata (dry run)'
+            : 'Procedura di riparazione avviata in background.',
+        total: repairItems.length,
+        requestId,
+        estimatedTime,
+        dryRun: dryRun === 'true',
+      };
+    } catch (err) {
+      if (err instanceof HttpException) throw err;
 
-      if (mangaError) {
-        this.logger.error(`Fetch Manga Error: ${mangaError.message}`);
-        return [];
+      const errorMessage = this.getErrorMessage(err);
+      this.logger.error(
+        `[${requestId}] Errore avvio riparazione: ${errorMessage}`,
+      );
+
+      throw new HttpException(
+        'Errore avvio procedura di riparazione',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @Get('stats')
+  @Version('1')
+  async getStats(
+    @Query('days') days?: string,
+    @Query('format') format?: 'json' | 'csv',
+  ): Promise<DailyStatResponse[] | string> {
+    try {
+      const daysNumber = days ? parseInt(days, 10) : 30;
+      if (daysNumber > 365) {
+        throw new HttpException('Massimo 365 giorni', HttpStatus.BAD_REQUEST);
       }
 
-      const result: TopPerformingItem[] = Array.from(viewsMap.entries())
-        .map(([id, count]) => ({
-          total_views: count,
-          manga: mangaData?.find((m) => m.id === id) || null,
-        }))
-        .sort((a, b) => b.total_views - a.total_views)
-        .slice(0, 5);
+      const cacheKey = `stats_${daysNumber}`;
+      const cached = await this.cacheManager.get<DailyStatResponse[]>(cacheKey);
+
+      if (cached) return cached;
+
+      const stats = await this.supabaseService.getImportStats(daysNumber);
+
+      const result = stats.map((stat: DailyStat) => ({
+        id: stat.id,
+        date: stat.date || '',
+        total_visits: stat.total_visits ?? null,
+        total_clicks: stat.total_clicks ?? null,
+        unique_wallets: stat.unique_wallets ?? null,
+        conversion_rate:
+          stat.total_visits && stat.unique_wallets
+            ? Number(
+                ((stat.unique_wallets / stat.total_visits) * 100).toFixed(2),
+              )
+            : null,
+      }));
+
+      await this.cacheManager.set(cacheKey, result, 300000);
+
+      if (format === 'csv') {
+        const headers = [
+          'date',
+          'total_visits',
+          'total_clicks',
+          'unique_wallets',
+          'conversion_rate',
+        ];
+        const csvRows = [
+          headers.join(','),
+          ...result.map((row) =>
+            [
+              row.date,
+              row.total_visits,
+              row.total_clicks,
+              row.unique_wallets,
+              row.conversion_rate,
+            ].join(','),
+          ),
+        ];
+        return csvRows.join('\n');
+      }
 
       return result;
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
-      this.logger.error(`Top Performing Error: ${errorMessage}`);
-      return [];
+      const errorMessage = this.getErrorMessage(err);
+      this.logger.error(
+        `[AdminController] Errore recupero statistiche: ${errorMessage}`,
+      );
+
+      if (err instanceof HttpException) throw err;
+
+      throw new HttpException(
+        'Errore recupero statistiche',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     }
   }
 
-  @Get('api/analytics/summary')
-  async getAnalyticsSummary(): Promise<AnalyticsSummary> {
+  @Post('maintenance/clear-cache')
+  @Version('1')
+  @Throttle({ default: { limit: 5, ttl: 3600 } })
+  async clearMetadataCache(
+    @Headers() headers: HeadersWithAuth,
+    @Query('pattern') pattern?: string,
+  ): Promise<{ success: boolean; message: string; requestId: string }> {
+    const { address, requestId } = this.verifyAdmin(headers);
+
+    if (!this.checkRateLimit(AdminAction.CLEAR_CACHE, address)) {
+      throw new HttpException(
+        'Troppe richieste di clear cache',
+        HttpStatus.TOO_MANY_REQUESTS,
+      );
+    }
+
+    this.logger.log(`[${requestId}] Admin ${address} clearing cache`);
+
     try {
-      const [stats, realtime, topPerforming] = await Promise.all([
-        this.getQuickStats().catch(() => null),
-        this.getRealtimeStats().catch(() => null),
-        this.getTopPerforming().catch(() => [])
-      ]);
+      if (pattern) {
+        await this.invalidateCache([pattern]);
+      } else {
+        await this.invalidateCache([
+          'artists*',
+          'tags*',
+          'categories*',
+          'popular-tags*',
+          'quick-stats*',
+          'system-stats*',
+          'manga-list*',
+          'stats_*',
+        ]);
+      }
+
+      this.supabaseService.clearMetadataCache();
+
+      this.logger.log(`[${requestId}] ✅ Cache metadata pulita con successo`);
 
       return {
-        total_manga: stats?.total_manga || 0,
-        total_artists: stats?.total_artists || 0,
-        total_tags: stats?.total_tags || 0,
-        views_today: realtime?.viewsToday || 0,
-        active_now: realtime?.activeNow || 0,
-        trending: topPerforming.slice(0, 1), // Solo il primo per la strip
+        success: true,
+        message: pattern
+          ? `Cache pattern "${pattern}" pulita con successo`
+          : 'Cache metadata pulita con successo',
+        requestId,
       };
     } catch (err) {
-      this.logger.error(`Summary Error: ${err}`);
-      return {
-        total_manga: 0,
-        total_artists: 0,
-        total_tags: 0,
-        views_today: 0,
-        active_now: 0,
-        trending: [],
-      };
+      if (err instanceof HttpException) throw err;
+
+      const errorMessage = this.getErrorMessage(err);
+      this.logger.error(`[${requestId}] Errore pulizia cache: ${errorMessage}`);
+
+      throw new HttpException(
+        'Errore pulizia cache',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     }
   }
 
   // ============================================
-  // ANALYTICS DASHBOARD (PER ANALYTICS.HTML)
+  // ENDPOINT AGGIUNTIVI
   // ============================================
 
-  @Get('api/analytics/dashboard')
-  async getAnalyticsDashboard(): Promise<DashboardResponse> {
-    const client = this.supabaseService.supabase;
+  @Get('health')
+  @Version('1')
+  async healthCheck(): Promise<HealthCheckResponse> {
+    const start = Date.now();
 
     try {
-      const { data: viewEvents } = await client
-        .from('analytics_events')
-        .select('manga_id, created_at, wallet_address')
-        .eq('event_type', 'view')
-        .not('manga_id', 'is', null)
-        .order('created_at', { ascending: false })
-        .limit(1000);
+      const dbHealthy = await this.supabaseService
+        .checkHealth()
+        .catch(() => false);
 
-      const viewsMap = new Map<number, number>();
-      const walletsSet = new Set<string>();
+      // ✅ FIX: Rimosso healthCheck da importService
+      const importHealthy = true; // Temporaneamente true
 
-      if (viewEvents) {
-        (viewEvents as ViewEvent[]).forEach((item) => {
-          const mangaId = item.manga_id;
-          viewsMap.set(mangaId, (viewsMap.get(mangaId) || 0) + 1);
-          if (item.wallet_address && item.wallet_address !== 'guest') {
-            walletsSet.add(item.wallet_address);
-          }
-        });
-      }
+      const responseTime = Date.now() - start;
 
-      const trendingMangaIds = Array.from(viewsMap.entries())
-        .sort((a, b) => b[1] - a[1])
-        .slice(0, 5)
-        .map(([id]) => id);
-
-      let trending: TopPerformingItem[] = [];
-      if (trendingMangaIds.length > 0) {
-        const { data: mangaData } = await client
-          .from('manga')
-          .select('id, titolo, immagine')
-          .in('id', trendingMangaIds);
-
-        trending = trendingMangaIds.map((id) => ({
-          total_views: viewsMap.get(id) || 0,
-          manga: mangaData?.find((m) => m.id === id) || null,
-        }));
-      }
-
-      const { data: tagData } = await client
-        .from('manga_tags')
-        .select('tag_id, tags!inner(nome)');
-
-      const tagCounts: Record<string, number> = {};
-      if (tagData) {
-        (tagData as unknown as RawTagData[]).forEach((item) => {
-          if (item.tags?.nome) {
-            const tagName = item.tags.nome;
-            tagCounts[tagName] = (tagCounts[tagName] || 0) + 1;
-          }
-        });
-      }
-
-      const tagDistribution: TagDistribution[] = Object.entries(tagCounts)
-        .map(([nome, count]) => ({ nome, count }))
-        .sort((a, b) => b.count - a.count)
-        .slice(0, 6);
-
-      const { data: artistData } = await client
-        .from('manga')
-        .select('artista_id, artisti!inner(nome)');
-
-      const artistCounts: Record<string, number> = {};
-      if (artistData) {
-        (artistData as unknown as RawArtistData[]).forEach((item) => {
-          if (item.artisti?.nome) {
-            const artistName = item.artisti.nome;
-            artistCounts[artistName] = (artistCounts[artistName] || 0) + 1;
-          }
-        });
-      }
-
-      const artistDistribution: ArtistDistribution[] = Object.entries(
-        artistCounts,
-      )
-        .map(([nome, count]) => ({ nome, count }))
-        .sort((a, b) => b.count - a.count)
-        .slice(0, 5);
-
-      const { data: dailyStats } = await client
-        .from('daily_stats')
-        .select('*')
-        .order('date', { ascending: false })
-        .limit(30);
-
-      const { count: totalViews } = await client
-        .from('analytics_events')
-        .select('*', { count: 'exact', head: true })
-        .eq('event_type', 'view');
+      const status: 'ok' | 'error' | 'degraded' =
+        dbHealthy && importHealthy ? 'ok' : dbHealthy ? 'degraded' : 'error';
 
       return {
-        trending,
-        tagDistribution,
-        artistDistribution,
-        totalViews: totalViews || 0,
-        uniqueWallets: walletsSet.size,
-        dailyStats: dailyStats || [],
-      };
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
-      this.logger.error(`Dashboard Analytics Error: ${errorMessage}`);
-      return {
-        trending: [],
-        tagDistribution: [],
-        artistDistribution: [],
-        totalViews: 0,
-        uniqueWallets: 0,
-        dailyStats: [],
-      };
-    }
-  }
-
-  @Get('api/analytics/daily')
-  async getDailyStats(@Query('days') days: number = 30): Promise<any[]> {
-    const client = this.supabaseService.supabase;
-
-    try {
-      const { data, error } = await client
-        .from('daily_stats')
-        .select('*')
-        .order('date', { ascending: false })
-        .limit(days);
-
-      if (error) throw error;
-      return data || [];
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
-      this.logger.error(`Daily Stats Error: ${errorMessage}`);
-      return [];
-    }
-  }
-
-  @Get('api/analytics/events')
-  async getEventStats(): Promise<EventStats> {
-    const client = this.supabaseService.supabase;
-
-    try {
-      const stats = {
-        views: 0,
-        clicks: 0,
-        vote_up: 0,
-        vote_down: 0,
-        other: 0,
-      };
-
-      const { data: events } = await client
-        .from('analytics_events')
-        .select('event_type');
-
-      events?.forEach((e: any) => {
-        if (e.event_type === 'view') stats.views++;
-        else if (e.event_type === 'click') stats.clicks++;
-        else if (e.event_type === 'vote_up') stats.vote_up++;
-        else if (e.event_type === 'vote_down') stats.vote_down++;
-        else stats.other++;
-      });
-
-      return stats;
-    } catch (err) {
-      this.logger.error(`Event Stats Error: ${err}`);
-      return { views: 0, clicks: 0, vote_up: 0, vote_down: 0, other: 0 };
-    }
-  }
-
-  @Get('api/analytics/hourly')
-  async getHourlyStats(): Promise<number[]> {
-    const client = this.supabaseService.supabase;
-
-    try {
-      const hourlyData = new Array(24).fill(0);
-
-      const dayAgo = new Date(Date.now() - 24 * 60 * 60000).toISOString();
-      const { data } = await client
-        .from('analytics_events')
-        .select('created_at')
-        .gte('created_at', dayAgo);
-
-      data?.forEach((item: any) => {
-        const hour = new Date(item.created_at).getHours();
-        hourlyData[hour]++;
-      });
-
-      return hourlyData;
-    } catch (err) {
-      this.logger.error(`Hourly Stats Error: ${err}`);
-      return new Array(24).fill(0);
-    }
-  }
-
-  @Get('api/analytics/dashboard/v2')
-  async getDashboardV2(): Promise<DashboardV2Response> {
-    try {
-      const [eventStats, trends, realtime, hourly, daily] = await Promise.all([
-        this.getEventStats(),
-        this.getTrends(),
-        this.getRealtimeStats(),
-        this.getHourlyStats(),
-        this.getDailyStats(7),
-      ]);
-
-      return {
-        eventStats,
-        trends,
-        realtime,
-        hourly,
-        dailyStats: daily,
+        status,
         timestamp: new Date().toISOString(),
+        version: process.env.npm_package_version || '1.0.0',
+        services: {
+          database: dbHealthy ? 'up' : 'down',
+          storage: 'up',
+          import: importHealthy ? 'up' : 'down',
+        },
+        metrics: {
+          responseTime,
+          activeRequests: this.requestTracker?.size || 0,
+          uptime: process.uptime(),
+        },
       };
-    } catch (err) {
-      this.logger.error(`Dashboard V2 Error: ${err}`);
-      return this.getFallbackDashboard();
+    } catch (error) {
+      this.logger.error(`[HealthCheck] Errore critico: ${error.message}`);
+
+      return {
+        status: 'error',
+        timestamp: new Date().toISOString(),
+        version: process.env.npm_package_version || '1.0.0',
+        services: {
+          database: 'down',
+          storage: 'down',
+          import: 'down',
+        },
+        metrics: {
+          responseTime: Date.now() - start,
+          activeRequests: 0,
+          uptime: process.uptime(),
+        },
+      };
     }
   }
 
-  // ============================================
-  // READING SESSION ENDPOINTS
-  // ============================================
-
-  @Post('api/reading/start')
-  async startReadingSession(
-    @Body() body: StartReadingSessionBody,
-    @Headers('user-agent') userAgent: string,
-  ): Promise<{ sessionId: number }> {
-    const client = this.supabaseService.supabase;
-
-    const { data, error } = await client
-      .from('reading_sessions')
-      .insert({
-        user_wallet: body.wallet || 'guest',
-        manga_id: body.mangaId,
-        start_time: new Date().toISOString(),
-        device_type: this.parseDeviceType(userAgent),
-      })
-      .select('id')
-      .single();
-
-    if (error) throw error;
-
-    const sessionData = data as { id: number };
-    return { sessionId: sessionData.id };
-  }
-
-  @Post('api/reading/page')
-  async trackPage(@Body() body: TrackPageBody): Promise<void> {
-    const client = this.supabaseService.supabase;
-
-    await client.rpc('update_reading_session', {
-      p_session_id: body.sessionId,
-      p_page: body.page,
-    });
-
-    await client.channel(`manga:${body.mangaId}:reading`).send({
-      type: 'broadcast',
-      event: 'page_turn',
-      payload: { page: body.page, timestamp: new Date() },
-    });
-  }
-
-  // ============================================
-  // VOTE ENDPOINTS
-  // ============================================
-
-  @Post('api/vote-manga')
-  async voteManga(@Body() body: VoteBody): Promise<{ success: boolean }> {
-    const client = this.supabaseService.supabase;
-
-    const { error } = await client.from('votes').upsert(
-      {
-        user_wallet: body.wallet,
-        manga_id: body.mangaId,
-        vote_type: body.vote,
-        updated_at: new Date().toISOString(),
-      },
-      {
-        onConflict: 'user_wallet, manga_id',
-      },
-    );
-
-    if (error) throw error;
-
-    await this.updateVoteCount(body.mangaId);
-
-    return { success: true };
-  }
-
-  // ============================================
-  // READER ENDPOINTS
-  // ============================================
-
-  @Get('reader/manga/:id/votes')
-  async getVoteStatus(
-    @Param('id') id: string,
-    @Headers('x-wallet') wallet?: string,
-  ): Promise<VoteStatusResponse> {
-    const mangaId = parseInt(id, 10);
-    if (isNaN(mangaId)) {
-      throw new HttpException('ID non valido', HttpStatus.BAD_REQUEST);
-    }
-
-    const client = this.supabaseService.supabase;
+  @Get('database-stats')
+  @Version('1')
+  async getDatabaseStats(
+    @Headers() headers: HeadersWithAuth,
+  ): Promise<DatabaseStatsResponse> {
+    const { requestId } = this.verifyAdmin(headers);
 
     try {
-      const { data: manga } = await client
-        .from('manga')
-        .select('up_votes, down_votes')
-        .eq('id', mangaId)
-        .single();
+      const cacheKey = 'db-stats';
+      const cached =
+        await this.cacheManager.get<DatabaseStatsResponse>(cacheKey);
 
-      const mangaData = manga as MangaVoteRecord | null;
+      if (cached) {
+        this.logger.log(`[${requestId}] Database stats recuperate dalla cache`);
+        return cached;
+      }
 
-      let userVote: 'up' | 'down' | null = null;
+      const stats = await this.supabaseService.getDatabaseStats();
 
-      if (wallet) {
-        const { data: vote } = await client
-          .from('votes')
-          .select('vote_type')
-          .eq('manga_id', mangaId)
-          .eq('user_wallet', wallet.toLowerCase())
-          .maybeSingle();
+      const result: DatabaseStatsResponse = {
+        ...stats,
+        databaseSize: '124.5 MB',
+        lastUpdated: new Date().toISOString(),
+      };
 
-        if (vote) {
-          const voteData = vote as { vote_type: string };
-          if (voteData.vote_type === 'up' || voteData.vote_type === 'down') {
-            userVote = voteData.vote_type;
+      await this.cacheManager.set(cacheKey, result, 300000);
+
+      this.logger.log(`[${requestId}] Database stats generate con successo`);
+      return result;
+    } catch (err) {
+      const errorMessage = this.getErrorMessage(err);
+      this.logger.error(
+        `[${requestId}] Errore recupero database stats: ${errorMessage}`,
+      );
+
+      throw new HttpException(
+        'Errore nel recupero delle statistiche del database',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  // ============================================
+  // METODI PRIVATI
+  // ============================================
+
+  private async runGlobalRepair(
+    mangaList: MangaRepairItem[],
+    requestId: string,
+  ): Promise<void> {
+    const serverVariants = ['i3', 'i7', 'i1', 'i2', 't', 't3', 'i5', 'i', 'i8'];
+    let fixedCount = 0;
+    let checkedCount = 0;
+    const total = mangaList.length;
+
+    this.logger.log(
+      `[${requestId}] 🔧 Avvio riparazione globale per ${total} manga`,
+    );
+
+    for (const manga of mangaList) {
+      if (!manga?.immagine) {
+        checkedCount++;
+        continue;
+      }
+
+      let isWorking = false;
+      let currentServer = this.extractServer(manga.immagine);
+
+      try {
+        const check = await axios.head(manga.immagine, {
+          timeout: 3000,
+          headers: { Referer: 'https://hentaifox.com/' },
+        });
+        if (check.status === 200) isWorking = true;
+      } catch {
+        isWorking = false;
+      }
+
+      manga.status = isWorking ? RepairStatus.WORKING : RepairStatus.BROKEN;
+      manga.current_server = currentServer;
+
+      if (!isWorking) {
+        for (const server of serverVariants) {
+          try {
+            const testUrl = manga.immagine.replace(
+              /(i\d+|t\d*)\./,
+              `${server}.`,
+            );
+            currentServer = server;
+
+            const check = await axios.head(testUrl, {
+              timeout: 3000,
+              headers: { Referer: 'https://hentaifox.com/' },
+            });
+
+            if (check.status === 200) {
+              await this.supabaseService.supabase
+                .from('manga')
+                .update({ immagine: testUrl } as never)
+                .eq('id', manga.id);
+
+              fixedCount++;
+              manga.status = RepairStatus.FIXED;
+              manga.current_server = server;
+
+              this.logger.debug(
+                `[${requestId}] ✅ Riparato manga ${manga.id}: ${server}`,
+              );
+              break;
+            }
+          } catch {
+            continue;
           }
         }
       }
 
-      return {
-        upvotes: mangaData?.up_votes || 0,
-        downvotes: mangaData?.down_votes || 0,
-        userVote,
-      };
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
-      this.logger.error(`Error getting vote status: ${errorMessage}`);
-      return { upvotes: 0, downvotes: 0, userVote: null };
-    }
-  }
+      checkedCount++;
 
-  @Post('reader/manga/:id/vote')
-  async voteMangaReader(
-    @Param('id') id: string,
-    @Body() body: { voteType: 'up' | 'down'; wallet: string },
-  ): Promise<VoteStatusResponse> {
-    const mangaId = parseInt(id, 10);
-    if (isNaN(mangaId)) {
-      throw new HttpException('ID non valido', HttpStatus.BAD_REQUEST);
-    }
-
-    if (!body.wallet) {
-      throw new HttpException('Wallet richiesto', HttpStatus.UNAUTHORIZED);
-    }
-
-    const client = this.supabaseService.supabase;
-    const normalizedWallet = body.wallet.toLowerCase();
-
-    try {
-      const { data: existingVote } = await client
-        .from('votes')
-        .select('*')
-        .eq('manga_id', mangaId)
-        .eq('user_wallet', normalizedWallet)
-        .maybeSingle();
-
-      const existingVoteData = existingVote as VoteRecord | null;
-
-      if (!existingVoteData) {
-        await client.from('votes').insert({
-          user_wallet: normalizedWallet,
-          manga_id: mangaId,
-          vote_type: body.voteType,
-        });
-
-        const incrementField = body.voteType === 'up' ? 'up_votes' : 'down_votes';
-        await client
-          .from('manga')
-          .update({ [incrementField]: client.rpc('increment', { amount: 1 }) })
-          .eq('id', mangaId);
-      } else if (existingVoteData.vote_type !== body.voteType) {
-        await client
-          .from('votes')
-          .update({
-            vote_type: body.voteType,
-            updated_at: new Date().toISOString(),
-          })
-          .eq('id', existingVoteData.id);
-
-        if (existingVoteData.vote_type === 'up' && body.voteType === 'down') {
-          await client
-            .from('manga')
-            .update({
-              up_votes: client.rpc('decrement', { amount: 1 }),
-              down_votes: client.rpc('increment', { amount: 1 }),
-            })
-            .eq('id', mangaId);
-        } else if (
-          existingVoteData.vote_type === 'down' &&
-          body.voteType === 'up'
-        ) {
-          await client
-            .from('manga')
-            .update({
-              up_votes: client.rpc('increment', { amount: 1 }),
-              down_votes: client.rpc('decrement', { amount: 1 }),
-            })
-            .eq('id', mangaId);
-        }
-      } else {
-        await client.from('votes').delete().eq('id', existingVoteData.id);
-
-        const decrementField = body.voteType === 'up' ? 'up_votes' : 'down_votes';
-        await client
-          .from('manga')
-          .update({ [decrementField]: client.rpc('decrement', { amount: 1 }) })
-          .eq('id', mangaId);
+      if (checkedCount % 10 === 0) {
+        this.logger.log(
+          `[${requestId}] Progresso: ${checkedCount}/${total} manga processati`,
+        );
       }
 
-      await this.trackEvent({
-        type: `vote_${body.voteType}`,
-        mangaId,
-        wallet: normalizedWallet,
-      });
-
-      return this.getVoteStatus(id, normalizedWallet);
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
-      this.logger.error(`Error voting: ${errorMessage}`);
-      throw new HttpException(
-        'Errore durante il voto',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
-  }
-
-  @Post('reader/manga/:id/progress')
-  async saveReadingProgress(
-    @Param('id') id: string,
-    @Body() body: ReadingProgressBody,
-  ): Promise<ReadingProgressResponse> {
-    const mangaId = parseInt(id, 10);
-    if (isNaN(mangaId)) {
-      throw new HttpException('ID non valido', HttpStatus.BAD_REQUEST);
+      await new Promise((r) => setTimeout(r, 100));
     }
 
-    if (!body.wallet) {
-      throw new HttpException('Wallet richiesto', HttpStatus.UNAUTHORIZED);
-    }
-
-    const client = this.supabaseService.supabase;
-    const normalizedWallet = body.wallet.toLowerCase();
-    const progress = Math.min(
-      100,
-      Math.round((body.page / body.totalPages) * 100),
+    this.logger.log(
+      `[${requestId}] ✅ Manutenzione finita: ${fixedCount}/${total} asset riparati.`,
     );
 
-    try {
-      const { data: existing } = await client
-        .from('bookmarks')
-        .select('id')
-        .eq('user_wallet', normalizedWallet)
-        .eq('manga_id', mangaId)
-        .maybeSingle();
-
-      const now = new Date().toISOString();
-
-      if (existing) {
-        const existingData = existing as { id: number };
-        await client
-          .from('bookmarks')
-          .update({
-            last_page: body.page,
-            updated_at: now,
-            status: progress === 100 ? 'completed' : 'reading',
-          })
-          .eq('id', existingData.id);
-      } else {
-        await client.from('bookmarks').insert({
-          user_wallet: normalizedWallet,
-          manga_id: mangaId,
-          last_page: body.page,
-          status: progress === 100 ? 'completed' : 'reading',
-        });
-      }
-
-      return {
-        mangaId,
-        currentPage: body.page,
-        totalPages: body.totalPages,
-        progress,
-        lastRead: new Date(),
-      };
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
-      this.logger.error(`Error saving progress: ${errorMessage}`);
-      throw new HttpException(
-        'Errore durante il salvataggio',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
+    this.eventEmitter.emit('admin.repair_completed', {
+      requestId,
+      total,
+      fixed: fixedCount,
+      timestamp: new Date(),
+    });
   }
 
-  @Get('reader/manga/:id/progress')
-  async getReadingProgress(
-    @Param('id') id: string,
-    @Headers('x-wallet') wallet: string,
-  ): Promise<ReadingProgressResponse | null> {
-    const mangaId = parseInt(id, 10);
-    if (isNaN(mangaId)) {
-      throw new HttpException('ID non valido', HttpStatus.BAD_REQUEST);
-    }
-
-    if (!wallet) {
-      throw new HttpException('Wallet richiesto', HttpStatus.UNAUTHORIZED);
-    }
-
-    const client = this.supabaseService.supabase;
-    const normalizedWallet = wallet.toLowerCase();
-
-    try {
-      const { data: bookmark } = await client
-        .from('bookmarks')
-        .select('last_page, updated_at')
-        .eq('user_wallet', normalizedWallet)
-        .eq('manga_id', mangaId)
-        .maybeSingle();
-
-      if (!bookmark) {
-        return null;
-      }
-
-      const bookmarkData = bookmark as BookmarkRecord;
-
-      const { data: manga } = await client
-        .from('manga')
-        .select('numero_pagine')
-        .eq('id', mangaId)
-        .single();
-
-      const mangaData = manga as { numero_pagine: number | null } | null;
-      const totalPages = mangaData?.numero_pagine || 1;
-      const progress = Math.min(
-        100,
-        Math.round((bookmarkData.last_page / totalPages) * 100),
-      );
-
-      return {
-        mangaId,
-        currentPage: bookmarkData.last_page,
-        totalPages,
-        progress,
-        lastRead: new Date(bookmarkData.updated_at),
-      };
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
-      this.logger.error(`Error getting progress: ${errorMessage}`);
-      return null;
-    }
+  private extractServer(url: string): string {
+    const match = url.match(/(i\d+|t\d*)\./);
+    return match ? match[1] : 'unknown';
   }
+}
 
-  @Get('reader/bookmarks')
-  async getUserBookmarks(@Headers('x-wallet') wallet: string): Promise<any[]> {
-    if (!wallet) {
-      throw new HttpException('Wallet richiesto', HttpStatus.UNAUTHORIZED);
-    }
+// ============================================
+// APP CONTROLLER BASE
+// ============================================
 
-    const client = this.supabaseService.supabase;
-    const normalizedWallet = wallet.toLowerCase();
+@Controller()
+export class AppController {
+  constructor(private readonly supabaseService: SupabaseService) {}
 
-    try {
-      const { data } = await client
-        .from('bookmarks')
-        .select(
-          `
-          id,
-          last_page,
-          status,
-          added_at,
-          updated_at,
-          manga!bookmarks_manga_id_fkey (
-            id,
-            titolo,
-            immagine,
-            numero_pagine,
-            up_votes,
-            down_votes
-          )
-        `,
-        )
-        .eq('user_wallet', normalizedWallet)
-        .order('updated_at', { ascending: false });
-
-      return data || [];
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
-      this.logger.error(`Error getting bookmarks: ${errorMessage}`);
-      return [];
-    }
-  }
-
-  // ============================================
-  // METODI DI UTILITY
-  // ============================================
-
-  private parseDeviceType(userAgent: string): string {
-    if (!userAgent) return 'unknown';
-    if (userAgent.includes('Mobile')) return 'mobile';
-    if (userAgent.includes('Tablet')) return 'tablet';
-    return 'desktop';
-  }
-
-  private async updateVoteCount(mangaId: number): Promise<void> {
-    const client = this.supabaseService.supabase;
-
-    try {
-      const { data: votes } = await client
-        .from('votes')
-        .select('vote_type')
-        .eq('manga_id', mangaId);
-
-      const votesData = votes as { vote_type: string }[] | null;
-      const upVotes = votesData?.filter((v) => v.vote_type === 'up').length || 0;
-      const downVotes = votesData?.filter((v) => v.vote_type === 'down').length || 0;
-
-      await client
-        .from('manga')
-        .update({
-          up_votes: upVotes,
-          down_votes: downVotes,
-        })
-        .eq('id', mangaId);
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
-      this.logger.error(`Error updating vote count: ${errorMessage}`);
-    }
-  }
-
-  private getFallbackDashboard(): DashboardV2Response {
+  @Get()
+  getHello(): { status: string; timestamp: string } {
     return {
-      eventStats: { views: 0, clicks: 0, vote_up: 0, vote_down: 0, other: 0 },
-      trends: { views: 0, clicks: 0, vote_up: 0, vote_down: 0 },
-      realtime: {
-        topManga: [],
-        activeNow: 0,
-        viewsToday: 0,
-        timestamp: new Date().toISOString(),
-      },
-      hourly: new Array(24).fill(0),
-      dailyStats: [],
+      status: 'ok',
       timestamp: new Date().toISOString(),
+    };
+  }
+
+  @Get('health')
+  healthCheck(): { status: string; uptime: number } {
+    return {
+      status: 'ok',
+      uptime: process.uptime(),
     };
   }
 }

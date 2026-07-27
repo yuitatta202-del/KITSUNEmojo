@@ -1,23 +1,48 @@
 <!doctype html>
-<html lang="en">
+<html lang="it">
   <head>
-    <!-- Google tag (gtag.js) -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-J3D0Z5V0RZ"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-
-  gtag('config', 'G-J3D0Z5V0RZ');
-</script>
+    <!-- Meta tag exoclick -->
+    <meta name="6a97888e-site-verification" content="86cedfa6aeb1cfa2ee94bb96f9934555">
+    <!-- Meta tag SEO e Social -->
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Kitsune Mojo - Libreria manga decentralizzata. Esplora, leggi e scopri migliaia di manga in modo libero e senza limiti. Unisciti alla community!" />
+    <meta name="keywords" content="manga, reader, web3, decentralized, library, kitsune, mojo, metamask, crypto, nft" />
+    <meta name="author" content="KitsuneMojo" />
+    <meta name="robots" content="index, follow" />
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://kitsune-mojo.vercel.app/" />
+    <meta property="og:title" content="Kitsune Mojo 🦊 | Decentralized Manga Library" />
+    <meta property="og:description" content="Esplora la libreria manga decentralizzata. Nessun limite, solo Mojo." />
+    <meta property="og:image" content="https://kitsune-mojo.vercel.app/og-image.jpg" />
+    
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image" />
+    <meta property="twitter:url" content="https://kitsune-mojo.vercel.app/" />
+    <meta property="twitter:title" content="Kitsune Mojo 🦊 | Decentralized Manga Library" />
+    <meta property="twitter:description" content="Esplora la libreria manga decentralizzata. Nessun limite, solo Mojo." />
+    <meta property="twitter:image" content="https://kitsune-mojo.vercel.app/og-image.jpg" />
+    
+    <!-- Favicon emoji volpe -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🦊</text></svg>">
+    
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-J3D0Z5V0RZ"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-J3D0Z5V0RZ');
+    </script>
+    
     <title>Kitsune Mojo | Decentralized Manga Library</title>
+    
+    <!-- Scripts e stili -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <link
-      rel="stylesheet"
-      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
-    />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
+    
     <style>
       body {
         background-color: #050505;
@@ -25,7 +50,6 @@
         scroll-behavior: smooth;
       }
       
-      /* MetaMask Style Elements */
       .glass-nav {
         background: rgba(10, 10, 10, 0.8);
         backdrop-filter: blur(12px);
@@ -59,7 +83,6 @@
         box-shadow: 0 20px 40px rgba(246, 133, 27, 0.15);
       }
 
-      /* MetaMask Style Tag Pills */
       .tag-pill {
         background: #111;
         border: 1px solid #1f2937;
@@ -78,7 +101,6 @@
         background: rgba(246, 133, 27, 0.05);
       }
 
-      /* Scrollbar MetaMask */
       ::-webkit-scrollbar {
         width: 8px;
       }
@@ -90,7 +112,6 @@
         border-radius: 10px;
       }
 
-      /* Page Badge */
       .page-badge {
         background: #000000cc;
         backdrop-filter: blur(4px);
@@ -105,7 +126,6 @@
         gap: 0.2rem;
       }
 
-      /* Artist Name */
       .artist-name {
         color: #f6851b;
         opacity: 0.7;
@@ -115,7 +135,6 @@
         letter-spacing: 0.05em;
       }
 
-      /* Back to Top Button */
       #backToTop {
         background: #f6851b;
         transition: all 0.3s;
@@ -128,7 +147,6 @@
         box-shadow: 0 8px 25px rgba(246, 133, 27, 0.5);
       }
 
-      /* Stats Card */
       .stat-card {
         background: #0a0a0a;
         border: 1px solid #1f2937;
@@ -156,7 +174,6 @@
         letter-spacing: 0.05em;
       }
 
-      /* Loading Skeleton */
       .skeleton {
         background: linear-gradient(90deg, #1a1a1a 25%, #2a2a2a 50%, #1a1a1a 75%);
         background-size: 200% 100%;
@@ -167,7 +184,6 @@
         100% { background-position: -200% 0; }
       }
 
-      /* Filter tabs */
       .filter-tab {
         background: #111;
         border: 1px solid #1f2937;
@@ -190,7 +206,6 @@
         border-color: #f6851b;
       }
 
-      /* Update notification */
       .update-notification {
         position: fixed;
         bottom: 20px;
@@ -211,7 +226,6 @@
         to { transform: translateX(0); opacity: 1; }
       }
 
-      /* Wallet connection indicator */
       .wallet-badge {
         background: #0a0a0a;
         border: 1px solid #f6851b;
@@ -225,54 +239,6 @@
         gap: 0.5rem;
       }
 
-      /* NEW: Live counter animation */
-      .live-counter {
-        display: inline-block;
-        animation: pulse 2s infinite;
-      }
-      @keyframes pulse {
-        0% { opacity: 1; }
-        50% { opacity: 0.6; }
-        100% { opacity: 1; }
-      }
-
-      /* NEW: Trending badge */
-      .trending-badge {
-        position: absolute;
-        top: 10px;
-        left: 10px;
-        background: linear-gradient(135deg, #f6851b, #e27613);
-        color: #000;
-        font-size: 0.5rem;
-        font-weight: 900;
-        padding: 0.2rem 0.5rem;
-        border-radius: 20px;
-        display: flex;
-        align-items: center;
-        gap: 0.2rem;
-        box-shadow: 0 0 15px rgba(246, 133, 27, 0.5);
-        z-index: 10;
-      }
-
-      /* NEW: View counter on card */
-      .view-counter {
-        position: absolute;
-        bottom: 10px;
-        left: 10px;
-        background: rgba(0, 0, 0, 0.7);
-        backdrop-filter: blur(4px);
-        border: 1px solid rgba(246, 133, 27, 0.3);
-        color: #f6851b;
-        font-size: 0.5rem;
-        font-weight: 700;
-        padding: 0.2rem 0.5rem;
-        border-radius: 20px;
-        display: flex;
-        align-items: center;
-        gap: 0.2rem;
-      }
-
-      /* NEW: Live stats row */
       .live-stats {
         background: #0a0a0a;
         border: 1px solid #1f2937;
@@ -304,7 +270,6 @@
         100% { opacity: 1; }
       }
 
-      /* NEW: Featured trending strip */
       .trending-strip {
         background: linear-gradient(90deg, rgba(246,133,27,0.1) 0%, rgba(0,0,0,0) 100%);
         border-left: 3px solid #f6851b;
@@ -317,66 +282,244 @@
         align-items: center;
         gap: 1rem;
       }
+
+      .trending-badge {
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        background: linear-gradient(135deg, #f6851b, #e27613);
+        color: #000;
+        font-size: 0.5rem;
+        font-weight: 900;
+        padding: 0.2rem 0.5rem;
+        border-radius: 20px;
+        display: flex;
+        align-items: center;
+        gap: 0.2rem;
+        box-shadow: 0 0 15px rgba(246, 133, 27, 0.5);
+        z-index: 10;
+      }
+
+      .view-counter {
+        position: absolute;
+        bottom: 10px;
+        left: 10px;
+        background: rgba(0, 0, 0, 0.7);
+        backdrop-filter: blur(4px);
+        border: 1px solid rgba(246, 133, 27, 0.3);
+        color: #f6851b;
+        font-size: 0.5rem;
+        font-weight: 700;
+        padding: 0.2rem 0.5rem;
+        border-radius: 20px;
+        display: flex;
+        align-items: center;
+        gap: 0.2rem;
+      }
+      
+      /* MetaMask button style */
+      .metamask-button {
+        background: linear-gradient(135deg, #f6851b 0%, #e27613 100%);
+        color: white;
+        font-weight: bold;
+        padding: 10px 24px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        transition: all 0.3s;
+        border: none;
+        cursor: pointer;
+      }
+      .metamask-button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(246, 133, 27, 0.4);
+      }
+      .metamask-button i {
+        font-size: 1.2rem;
+      }
+
+      /* Google Login Button */
+      .google-button {
+        background: white;
+        color: #333;
+        font-weight: bold;
+        padding: 10px 24px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        transition: all 0.3s;
+        border: none;
+        cursor: pointer;
+      }
+      .google-button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(255, 255, 255, 0.2);
+      }
+      .google-button i {
+        color: #4285f4;
+        font-size: 1.2rem;
+      }
+
+      /* User Menu Styles */
+      .user-menu-button {
+        background: #0a0a0a;
+        border: 1px solid #f6851b;
+        border-radius: 30px;
+        padding: 0.25rem 0.25rem 0.25rem 0.75rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+      .user-menu-button:hover {
+        border-color: #f6851b;
+        background: #111;
+      }
+      .user-avatar {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        border: 2px solid #f6851b;
+      }
+      .user-dropdown {
+        position: absolute;
+        right: 0;
+        top: 50px;
+        background: #0a0a0a;
+        border: 1px solid #1f2937;
+        border-radius: 12px;
+        min-width: 200px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        z-index: 100;
+      }
+      .user-dropdown a, .user-dropdown button {
+        display: block;
+        width: 100%;
+        text-align: left;
+        padding: 10px 16px;
+        color: #e2e8f0;
+        transition: all 0.2s;
+        font-size: 0.9rem;
+      }
+      .user-dropdown a:hover, .user-dropdown button:hover {
+        background: #1a1a1a;
+        color: #f6851b;
+      }
+      .user-dropdown hr {
+        border-color: #1f2937;
+        margin: 4px 0;
+      }
+      
+      /* Toast notification */
+      .toast {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        background: #1a1a1a;
+        border-left: 4px solid #f6851b;
+        color: white;
+        padding: 12px 20px;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+        z-index: 1000;
+        transform: translateY(100px);
+        opacity: 0;
+        transition: all 0.3s ease;
+      }
+      .toast.show {
+        transform: translateY(0);
+        opacity: 1;
+      }
+      .toast.success { border-left-color: #10b981; }
+      .toast.error { border-left-color: #ef4444; }
     </style>
   </head>
   <body class="font-sans">
-    <!-- NAVBAR MetaMask Style -->
+    <!-- Toast notification -->
+    <div id="toast" class="toast"></div>
+
+    <!-- NAVBAR -->
     <nav class="glass-nav sticky top-0 z-50 px-6 py-4">
       <div class="max-w-7xl mx-auto flex justify-between items-center">
-        <div
-          class="flex items-center gap-2 cursor-pointer"
-          onclick="window.location.reload()"
-        >
+        <div class="flex items-center gap-2 cursor-pointer" onclick="window.location.href='/'">
           <i class="fas fa-fox text-orange-500 text-2xl"></i>
-          <span class="text-xl font-black tracking-tighter uppercase"
-            >Kitsune<span class="text-orange-500">Mojo</span></span
-          >
+          <span class="text-xl font-black tracking-tighter uppercase">Kitsune<span class="text-orange-500">Mojo</span></span>
         </div>
 
         <div class="flex-1 max-w-md mx-8">
           <div class="relative">
             <i class="fas fa-search absolute left-4 top-3 text-gray-500"></i>
-            <input
-              type="text"
-              id="search-bar"
-              oninput="filterManga()"
-              placeholder="Search title, artist or tag..."
-              class="w-full bg-gray-900 border border-gray-800 rounded-full py-2 pl-12 pr-4 focus:outline-none focus:border-orange-500 transition-all"
-            />
+            <input type="text" id="search-bar" oninput="filterManga()" placeholder="Search title, artist or tag... 🔍" class="w-full bg-gray-900 border border-gray-800 rounded-full py-2 pl-12 pr-4 focus:outline-none focus:border-orange-500 transition-all" />
           </div>
         </div>
 
         <div class="flex items-center gap-4">
           <div class="hidden md:flex gap-6 text-sm font-bold text-gray-400 uppercase tracking-widest">
-            <a href="latest.html" class="hover:text-orange-500 transition font-black">Latest</a>
+            <a href="/" class="hover:text-orange-500 transition font-black">Home</a>
             <a href="/admin.html" class="text-gray-500 hover:text-orange-500 transition">
               <i class="fas fa-lock text-xs"></i> Admin
             </a>
           </div>
           
-          <!-- Wallet Connection Badge -->
           <div id="wallet-container" class="wallet-badge hidden">
             <i class="fas fa-wallet text-[8px]"></i>
             <span id="wallet-address">Not Connected</span>
           </div>
           
-          <button id="connect-wallet-btn" onclick="connectWallet()" class="text-xs bg-orange-600 hover:bg-orange-500 text-white px-4 py-2 rounded-full font-bold transition">
-            Connect
+          <!-- Google Login Button (visibile solo quando non loggati) -->
+          <button id="google-login-btn" onclick="handleGoogleLogin()" class="google-button hidden">
+            <i class="fab fa-google"></i>
+            <span class="text-xs font-black uppercase tracking-wider">Google</span>
           </button>
+          
+          <!-- MetaMask Button (visibile solo quando non loggati) -->
+          <button id="connect-wallet-btn" onclick="connectWallet()" class="metamask-button">
+            <i class="fab fa-metamask"></i>
+            <span class="text-xs font-black uppercase tracking-wider">Connect 🔌</span>
+          </button>
+
+          <!-- User Menu (visibile solo quando loggati) -->
+          <div id="user-menu" class="relative hidden">
+            <button onclick="toggleUserMenu()" class="user-menu-button">
+              <span id="user-name" class="text-sm font-bold max-w-[100px] truncate"></span>
+              <img id="user-avatar" src="" alt="avatar" class="user-avatar">
+            </button>
+            
+            <!-- Dropdown menu -->
+            <div id="user-dropdown" class="user-dropdown hidden">
+              <div class="py-1">
+                <a href="/profile.html">
+                  <i class="fas fa-user w-5"></i> Profile
+                </a>
+                <a href="/favorites.html">
+                  <i class="fas fa-heart w-5"></i> Favorites
+                </a>
+                <a href="/history.html">
+                  <i class="fas fa-history w-5"></i> History
+                </a>
+                <hr>
+                <button onclick="handleLogout()" class="text-red-500 hover:text-red-400">
+                  <i class="fas fa-sign-out-alt w-5"></i> Logout
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </nav>
 
-    <!-- HEADER MetaMask Style -->
+    <!-- HEADER -->
     <header class="py-16 px-6 text-center">
       <h2 class="text-5xl md:text-7xl font-extrabold mb-4 tracking-tighter uppercase">
-        Explore the <span class="text-orange-500">Mojo</span>.
+        Explore the <span class="text-orange-500">Mojo</span>
       </h2>
       <p class="text-gray-500 max-w-2xl mx-auto italic">
         Your decentralized digital library. <span class="text-orange-500" id="live-views">0</span> views today
       </p>
       
-      <!-- NEW: Live stats row -->
       <div class="live-stats">
         <div class="live-stat-item">
           <span class="live-dot"></span>
@@ -398,7 +541,6 @@
         </div>
       </div>
       
-      <!-- Quick Stats MetaMask Style - REAL DATA FROM DATABASE -->
       <div class="flex justify-center gap-4 mt-8 flex-wrap">
         <div id="stat-manga" class="stat-card skeleton">
           <div class="stat-number" id="manga-count">0</div>
@@ -418,10 +560,9 @@
         </div>
       </div>
 
-      <!-- NEW: Trending strip -->
       <div id="trending-strip" class="trending-strip hidden">
         <i class="fas fa-fire text-orange-500"></i>
-        <span class="text-orange-500 font-black">HOT</span>
+        <span class="text-orange-500 font-black">HOT 🔥</span>
         <span id="trending-title" class="text-white">Loading...</span>
         <span class="text-gray-600 text-[8px]">⬆️ <span id="trending-views">0</span> views today</span>
       </div>
@@ -429,7 +570,6 @@
 
     <!-- MAIN CONTENT -->
     <main class="max-w-7xl mx-auto px-6 pb-10">
-      <!-- Filter Tabs -->
       <div class="flex justify-center gap-3 mb-8">
         <button onclick="sortManga('recent')" class="filter-tab" id="tab-recent">🔥 Recent</button>
         <button onclick="sortManga('az')" class="filter-tab" id="tab-az">📚 A-Z</button>
@@ -437,34 +577,25 @@
         <button onclick="sortManga('trending')" class="filter-tab" id="tab-trending">📈 Trending</button>
       </div>
 
-      <!-- Manga Grid -->
       <div id="manga-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
-        <!-- Loading skeletons per i manga -->
-        <div class="skeleton h-80 rounded-2xl"></div>
-        <div class="skeleton h-80 rounded-2xl"></div>
-        <div class="skeleton h-80 rounded-2xl"></div>
-        <div class="skeleton h-80 rounded-2xl"></div>
-        <div class="skeleton h-80 rounded-2xl"></div>
+        <!-- Gli skeleton verranno rimossi quando i dati vengono caricati -->
       </div>
 
-      <!-- Load More -->
       <div id="load-more-container" class="text-center mt-10 hidden">
         <button onclick="loadMore()" class="filter-tab">
-          <i class="fas fa-spinner mr-2"></i> Load More
+          <i class="fas fa-spinner mr-2"></i> Load More ⬇️
         </button>
       </div>
     </main>
 
-    <!-- POPULAR TAGS SECTION - FIXED AND WORKING -->
+    <!-- POPULAR TAGS SECTION -->
     <section class="max-w-7xl mx-auto px-6 mt-10 py-12 border-t border-gray-900">
       <h4 class="text-[10px] font-black uppercase tracking-[0.3em] text-gray-600 mb-8 flex items-center gap-4">
         <i class="fas fa-fire text-orange-500"></i>
         POPULAR TAGS
         <span class="h-px bg-gray-900 flex-1"></span>
       </h4>
-      <div id="tag-cloud" class="flex flex-wrap gap-2 justify-center">
-        <!-- Tags will be inserted here by JavaScript -->
-      </div>
+      <div id="tag-cloud" class="flex flex-wrap gap-2 justify-center"></div>
     </section>
 
     <!-- FOOTER -->
@@ -473,7 +604,7 @@
         <div>
           <div class="flex items-center justify-center md:justify-start gap-2 mb-4">
             <i class="fas fa-fox text-orange-500 text-xl"></i>
-            <span class="text-lg font-black uppercase tracking-tighter">Kitsune<span class="text-orange-500">Mojo</span></span>
+            <span class="text-lg font-black uppercase tracking-tighter">Kitsune<span class="text-orange-500">Mojo</span> 🦊</span>
           </div>
           <p class="text-gray-500 text-sm italic leading-relaxed">
             Private archive for preserving manga culture. No limits, only Mojo.
@@ -481,10 +612,10 @@
         </div>
         <div class="flex flex-col gap-3">
           <h4 class="text-white font-bold uppercase text-[10px] tracking-widest mb-2">Navigation</h4>
-          <a href="index.html" class="text-gray-600 hover:text-orange-500 text-xs transition uppercase font-bold">Home</a>
-          <a href="admin.html" class="text-gray-600 hover:text-orange-500 text-xs transition uppercase font-bold">Admin Panel</a>
-          <a href="privacy.html" class="text-gray-600 hover:text-orange-500 text-xs transition uppercase font-bold">Privacy</a>
-          <a href="terms.html" class="text-gray-600 hover:text-orange-500 text-xs transition uppercase font-bold">Terms</a>
+          <a href="/" class="text-gray-600 hover:text-orange-500 text-xs transition uppercase font-bold">Home</a>
+          <a href="/admin.html" class="text-gray-600 hover:text-orange-500 text-xs transition uppercase font-bold">Admin Panel</a>
+          <a href="/privacy.html" class="text-gray-600 hover:text-orange-500 text-xs transition uppercase font-bold">Privacy</a>
+          <a href="/terms.html" class="text-gray-600 hover:text-orange-500 text-xs transition uppercase font-bold">Terms</a>
         </div>
         <div>
           <h4 class="text-white font-bold uppercase text-[10px] tracking-widest mb-2">Connect</h4>
@@ -496,7 +627,7 @@
         </div>
       </div>
       <div class="text-center mt-16 text-[9px] text-gray-800 font-mono uppercase tracking-[0.5em]">
-        © 2024 KitsuneMojo. All Rights Reserved. 
+        © 2026 KitsuneMojo. All Rights Reserved. 
         <span class="text-orange-500/30 ml-2" id="footer-last-update"></span>
       </div>
     </footer>
@@ -509,7 +640,181 @@
 
     <script>
       // ============================================
-      // WALLET CONNECTION & TRACKING
+      // CONFIGURAZIONE - ENDPOINT CORRETTI PER LA HOME PAGE
+      // ============================================
+      
+      const BASE_URL = window.location.hostname === 'localhost' 
+        ? 'http://localhost:3000' 
+        : 'https://kitsune-backend.onrender.com';
+
+      // ENDPOINT CORRETTI per la home page (public)
+      const MANGA_API = `${BASE_URL}/admin/manga`;           // GET /admin/manga - HomeMangaResponse[]
+      const STATS_API = `${BASE_URL}/admin/quick-stats`;     // GET /admin/quick-stats - QuickStats
+      const PROXY_URL = `${BASE_URL}/admin/proxy?url=`;      // GET /admin/proxy?url= - Proxy immagini
+      const AUTH_API = `${BASE_URL}/api/auth`;               // API per autenticazione
+
+      console.log('🌐 Environment:', window.location.hostname === 'localhost' ? 'development' : 'production');
+      console.log('🌐 BASE_URL:', BASE_URL);
+      console.log('🌐 MANGA_API:', MANGA_API);
+      console.log('🌐 STATS_API:', STATS_API);
+      console.log('🌐 PROXY_URL:', PROXY_URL);
+      console.log('🌐 AUTH_API:', AUTH_API);
+
+      // ============================================
+      // TOAST FUNCTION
+      // ============================================
+      function showToast(message, type = 'info') {
+        const toast = document.getElementById('toast');
+        toast.textContent = message;
+        toast.className = `toast ${type}`;
+        toast.classList.add('show');
+        setTimeout(() => {
+          toast.classList.remove('show');
+        }, 3000);
+      }
+
+      // ============================================
+      // AUTH STATE
+      // ============================================
+      let currentUser = null;
+      let authToken = localStorage.getItem('authToken');
+
+      // ============================================
+      // GOOGLE LOGIN FUNCTIONS
+      // ============================================
+      function handleGoogleLogin() {
+        // Salva la pagina corrente per tornare dopo il login
+        localStorage.setItem('redirectAfterLogin', window.location.pathname);
+        
+        // Apri finestra di login Google
+        const width = 500;
+        const height = 600;
+        const left = window.screen.width / 2 - width / 2;
+        const top = window.screen.height / 2 - height / 2;
+        
+        window.open(
+          `${AUTH_API}/google`,
+          'Google Login',
+          `width=${width},height=${height},left=${left},top=${top},toolbar=0,location=0,menubar=0`
+        );
+      }
+
+      // Verifica token con backend
+      async function verifyToken(token) {
+        try {
+          const response = await fetch(`${AUTH_API}/me`, {
+            headers: {
+              'Authorization': `Bearer ${token}`
+            }
+          });
+          
+          if (response.ok) {
+            currentUser = await response.json();
+            updateUILoggedIn();
+            return true;
+          } else {
+            // Token invalido
+            localStorage.removeItem('authToken');
+            updateUILoggedOut();
+            return false;
+          }
+        } catch (error) {
+          console.error('Token verification failed:', error);
+          updateUILoggedOut();
+          return false;
+        }
+      }
+
+      // Gestione callback da popup
+      window.addEventListener('message', async (event) => {
+        if (event.data.type === 'GOOGLE_LOGIN_SUCCESS') {
+          if (event.data.token) {
+            localStorage.setItem('authToken', event.data.token);
+            await verifyToken(event.data.token);
+            showToast(`Welcome! 🦊`, 'success');
+            
+            // Redirect alla pagina originale
+            const redirectTo = localStorage.getItem('redirectAfterLogin') || '/';
+            localStorage.removeItem('redirectAfterLogin');
+            window.location.href = redirectTo;
+          }
+        }
+      });
+
+      // Aggiorna UI quando loggato
+      function updateUILoggedIn() {
+        document.getElementById('google-login-btn').classList.add('hidden');
+        document.getElementById('connect-wallet-btn').classList.add('hidden');
+        document.getElementById('user-menu').classList.remove('hidden');
+        
+        if (currentUser) {
+          const userName = currentUser.username || currentUser.email?.split('@')[0] || 'User';
+          document.getElementById('user-name').textContent = userName;
+          
+          // Avatar da Google o fallback
+          if (currentUser.avatar) {
+            document.getElementById('user-avatar').src = currentUser.avatar;
+          } else {
+            document.getElementById('user-avatar').src = `https://ui-avatars.com/api/?name=${encodeURIComponent(userName)}&background=f6851b&color=fff&size=128`;
+          }
+        }
+      }
+
+      // Aggiorna UI quando logout
+      function updateUILoggedOut() {
+        document.getElementById('google-login-btn').classList.remove('hidden');
+        document.getElementById('connect-wallet-btn').classList.remove('hidden');
+        document.getElementById('user-menu').classList.add('hidden');
+        document.getElementById('user-dropdown').classList.add('hidden');
+      }
+
+      // Toggle dropdown menu
+      function toggleUserMenu() {
+        const dropdown = document.getElementById('user-dropdown');
+        dropdown.classList.toggle('hidden');
+      }
+
+      // Logout
+      async function handleLogout() {
+        try {
+          if (authToken) {
+            await fetch(`${AUTH_API}/logout`, {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${authToken}`
+              }
+            });
+          }
+        } catch (error) {
+          console.error('Logout error:', error);
+        } finally {
+          localStorage.removeItem('authToken');
+          authToken = null;
+          currentUser = null;
+          updateUILoggedOut();
+          showToast('Logged out successfully 👋', 'success');
+        }
+      }
+
+      // Chiudi dropdown quando si clicca fuori
+      document.addEventListener('click', (event) => {
+        const userMenu = document.getElementById('user-menu');
+        const dropdown = document.getElementById('user-dropdown');
+        
+        if (userMenu && !userMenu.contains(event.target) && !dropdown?.classList.contains('hidden')) {
+          dropdown?.classList.add('hidden');
+        }
+      });
+
+      // Verifica stato auth all'avvio
+      if (authToken) {
+        verifyToken(authToken);
+      } else {
+        updateUILoggedOut();
+      }
+
+      // ============================================
+      // WALLET CONNECTION
       // ============================================
       let userWallet = null;
 
@@ -525,11 +830,14 @@
               userWallet.substring(0, 6) + '...' + userWallet.slice(-4);
             
             console.log('✅ Wallet connected:', userWallet);
+            showToast("Wallet connected successfully! ✅", "success");
           } catch (err) {
             console.error('Wallet connection failed:', err);
+            showToast("Wallet connection failed", "error");
           }
         } else {
-          alert('Please install MetaMask');
+          console.log('ℹ️ MetaMask not installed');
+          showToast("Please install MetaMask", "error");
         }
       }
 
@@ -555,75 +863,44 @@
         lastUpdate: Date.now()
       };
 
-      // Track last stats for real-time updates
-      let lastStats = { total_manga: 0, total_artists: 0, total_tags: 0, total_views: 0 };
-      let updateInterval = null;
-      let realtimeInterval = null;
-
-// ============================================
-// CONFIGURAZIONE - Versione produzione
-// ============================================
-
-// Determina l'URL base in base all'ambiente
-const BASE_URL = window.location.hostname === 'localhost' 
-  ? 'http://localhost:3000' 
-  : 'https://kitsun-emojo.vercel.app';  // ← SOSTITUISCI CON IL TUO URL RENDER
-
-const PROXY_URL = `${BASE_URL}/admin/proxy?url=`;
-const API_URL = `${BASE_URL}/admin`;
-const TRACK_API = `${BASE_URL}/api`;
-
-// Log per debug (puoi rimuoverli in produzione)
-console.log('🌐 Environment:', window.location.hostname === 'localhost' ? 'development' : 'production');
-console.log('🌐 BASE_URL:', BASE_URL);
-console.log('🌐 API_URL:', API_URL);
-console.log('🌐 TRACK_API:', TRACK_API);
-console.log('🌐 PROXY_URL:', PROXY_URL);
-
       // ============================================
-      // TRACKING FUNCTIONS
+      // LOAD DATA
       // ============================================
-      async function trackEvent(type, mangaId = null) {
-        try {
-          await fetch(`${TRACK_API}/track`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              type,
-              mangaId,
-              wallet: userWallet || 'guest'
-            })
-          });
-        } catch (err) {
-          console.error('Tracking error:', err);
-        }
-      }
-
-      async function trackMangaClick(mangaId) {
-        await trackEvent('click', mangaId);
-      }
-
-      // ============================================
-      // LOAD DATA FROM DATABASE
-      // ============================================
-      async function loadAllData(showNotification = false) {
+      async function loadAllData() {
         try {
           AppState.isLoading = true;
           
-          // Load manga
-          const mangaRes = await fetch(`${API_URL}/manga`);
+          // Mostra gli skeleton durante il caricamento
+          showSkeletons();
+          
+          // Carica manga dall'endpoint /admin/manga (versione leggera per homepage)
+          const mangaRes = await fetch(MANGA_API).catch(err => {
+            console.error('❌ Failed to fetch manga:', err);
+            return { ok: false, status: 0 };
+          });
           
           if (mangaRes.ok) {
             const data = await mangaRes.json();
+            console.log('✅ Manga data loaded:', data?.length || 0, 'items');
             AppState.manga = Array.isArray(data) ? data : [];
             AppState.filteredManga = [...AppState.manga];
+            showToast(`📚 ${AppState.manga.length} manga caricati`, "success");
+          } else {
+            console.warn(`⚠️ Failed to load manga: ${mangaRes.status} ${mangaRes.statusText}`);
+            AppState.manga = [];
+            AppState.filteredManga = [];
+            
+            if (mangaRes.status === 404) {
+              showToast("❌ Endpoint /admin/manga non trovato (404)", "error");
+            } else if (mangaRes.status === 500) {
+              showToast("❌ Errore server (500) - Controlla i log", "error");
+            } else {
+              showToast(`❌ Failed to load manga (${mangaRes.status})`, "error");
+            }
           }
 
-          // Load REAL statistics
-          await loadStatsFromDatabase();
-          
-          // Load realtime stats
-          await loadRealtimeStats();
+          // Carica statistiche da /admin/quick-stats
+          await loadStats();
           
           AppState.isLoading = false;
           removeSkeletons();
@@ -636,169 +913,71 @@ console.log('🌐 PROXY_URL:', PROXY_URL);
             document.getElementById('load-more-container').classList.remove('hidden');
           }
 
-          // Save current stats for comparison
-          lastStats = {
-            total_manga: AppState.stats.total_manga,
-            total_artists: AppState.stats.total_artists,
-            total_tags: AppState.stats.total_tags,
-            total_views: AppState.stats.total_views
-          };
-
-          if (showNotification) {
-            showUpdateNotification();
-          }
-
           document.getElementById('footer-last-update').innerText = 
             `Updated ${new Date().toLocaleTimeString()}`;
 
         } catch (err) {
           console.error('Error loading data:', err);
           AppState.isLoading = false;
+          showToast("Error loading data", "error");
+          
+          document.getElementById('manga-grid').innerHTML = `
+            <div class="col-span-full text-center py-20 text-gray-600">
+              <i class="fas fa-exclamation-triangle text-4xl mb-4 text-orange-500/50"></i>
+              <p class="text-sm">Unable to load manga. Please try again later.</p>
+              <p class="text-xs text-gray-700 mt-2">${err.message || 'Unknown error'}</p>
+            </div>
+          `;
         }
       }
 
-      async function loadStatsFromDatabase() {
+      async function loadStats() {
         try {
-          const statsRes = await fetch(`${API_URL}/quick-stats`).catch(() => ({ ok: false }));
+          const statsRes = await fetch(STATS_API).catch(err => {
+            console.error('❌ Failed to fetch stats:', err);
+            return { ok: false };
+          });
           
           if (statsRes.ok) {
             const statsData = await statsRes.json();
             AppState.stats.total_manga = statsData.total_manga || 0;
             AppState.stats.total_artists = statsData.total_artists || 0;
             AppState.stats.total_tags = statsData.total_tags || 0;
+            console.log('✅ Stats loaded:', AppState.stats);
+          } else {
+            console.warn('⚠️ Failed to load stats');
           }
-
-          // Load total views from analytics
-          const dashboardRes = await fetch(`${TRACK_API}/analytics/dashboard`).catch(() => ({ ok: false }));
-          if (dashboardRes.ok) {
-            const dashboard = await dashboardRes.json();
-            AppState.stats.total_views = dashboard.totalViews || 0;
-          }
-
-          // Load trending data
-          const trendingRes = await fetch(`${TRACK_API}/analytics/top-performing`).catch(() => ({ ok: false }));
-          if (trendingRes.ok) {
-            AppState.stats.trending = await trendingRes.json();
-            updateTrendingStrip();
-          }
-
         } catch (err) {
           console.error('Error loading stats:', err);
         }
       }
 
-      async function loadRealtimeStats() {
-        try {
-          const realtimeRes = await fetch(`${TRACK_API}/analytics/realtime`).catch(() => ({ ok: false }));
-          if (realtimeRes.ok) {
-            const realtime = await realtimeRes.json();
-            AppState.stats.views_today = realtime.viewsToday || 0;
-            AppState.stats.active_now = realtime.activeNow || 0;
-            
-            document.getElementById('live-today').innerText = AppState.stats.views_today;
-            document.getElementById('live-active').innerText = AppState.stats.active_now;
-            document.getElementById('live-views').innerText = AppState.stats.views_today;
-          }
-
-          // Load trends
-          const trendsRes = await fetch(`${TRACK_API}/analytics/trends`).catch(() => ({ ok: false }));
-          if (trendsRes.ok) {
-            const trends = await trendsRes.json();
-            const trendValue = trends.views || 0;
-            document.getElementById('live-trend').innerHTML = 
-              `<span class="${trendValue >= 0 ? 'text-green-500' : 'text-red-500'}">${trendValue >= 0 ? '+' : ''}${trendValue}%</span>`;
-          }
-
-        } catch (err) {
-          console.error('Error loading realtime stats:', err);
-        }
-      }
-
-      function updateTrendingStrip() {
-        const strip = document.getElementById('trending-strip');
-        if (AppState.stats.trending && AppState.stats.trending.length > 0) {
-          const top = AppState.stats.trending[0];
-          document.getElementById('trending-title').innerText = top.manga?.titolo || 'Unknown';
-          document.getElementById('trending-views').innerText = top.total_views || 0;
-          strip.classList.remove('hidden');
-        } else {
-          strip.classList.add('hidden');
-        }
-      }
-
-      // ============================================
-      // REAL-TIME UPDATES (Polling every 10 seconds)
-      // ============================================
-      async function checkForUpdates() {
-        try {
-          await loadRealtimeStats();
-          
-          const res = await fetch(`${API_URL}/quick-stats`).catch(() => ({ ok: false }));
-          
-          if (res.ok) {
-            const status = await res.json();
-            
-            if (status.total_manga !== lastStats.total_manga ||
-                status.total_artists !== lastStats.total_artists ||
-                status.total_tags !== lastStats.total_tags) {
-              
-              console.log('🔄 Database updated, reloading...');
-              lastStats = {
-                ...lastStats,
-                total_manga: status.total_manga,
-                total_artists: status.total_artists,
-                total_tags: status.total_tags
-              };
-              
-              await loadAllData(true);
-            }
-          }
-        } catch (err) {
-          console.error('Error checking updates:', err);
-        }
-      }
-
-      function startRealtimeUpdates() {
-        if (updateInterval) clearInterval(updateInterval);
-        updateInterval = setInterval(checkForUpdates, 10000);
-        
-        if (realtimeInterval) clearInterval(realtimeInterval);
-        realtimeInterval = setInterval(loadRealtimeStats, 5000);
-      }
-
-      function showUpdateNotification() {
-        const notification = document.createElement('div');
-        notification.className = 'update-notification';
-        notification.innerHTML = '<i class="fas fa-sync-alt fa-spin mr-2"></i> Catalog Updated!';
-        document.body.appendChild(notification);
-        
-        setTimeout(() => {
-          notification.remove();
-        }, 3000);
-      }
-
       // ============================================
       // UI FUNCTIONS
       // ============================================
+      function showSkeletons() {
+        const grid = document.getElementById('manga-grid');
+        grid.innerHTML = Array(10).fill(0).map(() => 
+          '<div class="skeleton h-80 rounded-2xl"></div>'
+        ).join('');
+      }
+
       function updateStats() {
         document.getElementById('manga-count').innerText = AppState.stats.total_manga;
         document.getElementById('artists-count').innerText = AppState.stats.total_artists;
         document.getElementById('tags-count').innerText = AppState.stats.total_tags;
-        document.getElementById('total-views').innerText = AppState.stats.total_views;
       }
 
       function removeSkeletons() {
-        document.getElementById('stat-manga').classList.remove('skeleton');
-        document.getElementById('stat-artists').classList.remove('skeleton');
-        document.getElementById('stat-tags').classList.remove('skeleton');
-        document.getElementById('stat-views').classList.remove('skeleton');
+        // Gli skeleton vengono rimossi automaticamente quando renderManga viene chiamata
       }
 
       function updateActiveTab() {
         document.querySelectorAll('.filter-tab').forEach(tab => {
           tab.classList.remove('active');
         });
-        document.getElementById(`tab-${AppState.currentSort}`).classList.add('active');
+        const activeTab = document.getElementById(`tab-${AppState.currentSort}`);
+        if (activeTab) activeTab.classList.add('active');
       }
 
       function renderPopularTags() {
@@ -810,8 +989,8 @@ console.log('🌐 PROXY_URL:', PROXY_URL);
         AppState.manga.forEach(m => {
           if (m.tags && Array.isArray(m.tags)) {
             m.tags.forEach(tag => {
-              if (tag?.nome) {
-                const tagName = tag.nome;
+              if (tag) {
+                const tagName = typeof tag === 'string' ? tag : tag.nome || tag;
                 tagsMap.set(tagName, (tagsMap.get(tagName) || 0) + 1);
               }
             });
@@ -823,7 +1002,7 @@ console.log('🌐 PROXY_URL:', PROXY_URL);
           .slice(0, 30);
 
         if (popularTags.length === 0) {
-          tagCloud.innerHTML = '<span class="text-gray-600 text-xs">No tags available</span>';
+          tagCloud.innerHTML = '<span class="text-gray-600 text-xs">No tags available 🏷️</span>';
           return;
         }
 
@@ -840,54 +1019,46 @@ console.log('🌐 PROXY_URL:', PROXY_URL);
         if (!list || list.length === 0) {
           grid.innerHTML = `<div class="col-span-full text-center py-20 text-gray-600 font-mono italic">
             <i class="fas fa-fox text-6xl mb-4 text-gray-800"></i><br>
-            No manga found
+            No manga found 📭
           </div>`;
           return;
         }
 
         grid.innerHTML = list.map((m, index) => {
-          const proxiedImage = `${PROXY_URL}${encodeURIComponent(m.immagine || '')}`;
-          const artistName = m.artisti?.nome || 'Anonymous';
-          const pageCount = m.numero_pagine || 0;
+          // Gestione dei tags che possono essere stringhe o oggetti
+          const tags = Array.isArray(m.tags) 
+            ? m.tags.map(t => typeof t === 'string' ? t : t.nome || t).filter(Boolean)
+            : [];
           
-          const tags = [];
-          if (m.tags && Array.isArray(m.tags)) {
-            m.tags.slice(0, 2).forEach(tag => {
-              if (tag?.nome) {
-                tags.push(tag.nome);
-              }
-            });
-          }
-
-          // Generate random view count for demo (in production, use real data)
+          const imageUrl = m.immagine ? `${PROXY_URL}${encodeURIComponent(m.immagine)}` : '';
+          const artistName = m.artisti?.nome || m.artisti || 'Anonymous';
+          const pageCount = m.numero_pagine || 0;
           const viewCount = Math.floor(Math.random() * 1000) + 100;
           const isTrending = index < 3 && AppState.currentSort === 'trending';
           
           return `
-            <div onclick="window.location.href='reader.html?id=${m.id}'; trackMangaClick(${m.id})" 
+            <div onclick="window.location.href='reader.html?id=${m.id}'" 
                  style="animation-delay: ${index * 0.05}s"
                  class="manga-card cursor-pointer relative">
               <div class="relative aspect-[3/4] overflow-hidden">
                 ${isTrending ? `
                   <div class="trending-badge">
                     <i class="fas fa-fire"></i>
-                    <span>TRENDING #${index + 1}</span>
+                    <span>TRENDING #${index + 1} 🔥</span>
                   </div>
                 ` : ''}
                 
-                <img src="${proxiedImage}" 
+                <img src="${imageUrl}" 
                      class="w-full h-full object-cover transition duration-500 hover:scale-110" 
                      alt="${m.titolo}"
                      loading="lazy"
                      onerror="this.src='https://placehold.co/400x600/0a0a0a/f6851b?text=NO+COVER'">
                 
-                <!-- Page badge -->
                 <div class="absolute top-2 right-2 page-badge">
                   <i class="fas fa-book-open text-[8px]"></i>
                   <span>${pageCount}</span>
                 </div>
 
-                <!-- View counter -->
                 <div class="view-counter">
                   <i class="fas fa-eye text-[8px]"></i>
                   <span>${viewCount}</span>
@@ -898,10 +1069,9 @@ console.log('🌐 PROXY_URL:', PROXY_URL);
                 <h3 class="font-bold text-xs leading-tight line-clamp-2 text-white">${m.titolo}</h3>
                 <p class="artist-name mt-1">${artistName}</p>
                 
-                <!-- Tags preview -->
                 ${tags.length > 0 ? `
                   <div class="flex flex-wrap gap-1 mt-2">
-                    ${tags.map(tag => `<span class="tag-pill">#${tag}</span>`).join('')}
+                    ${tags.slice(0, 2).map(tag => `<span class="tag-pill">#${tag}</span>`).join('')}
                   </div>
                 ` : ''}
               </div>
@@ -911,16 +1081,22 @@ console.log('🌐 PROXY_URL:', PROXY_URL);
       }
 
       // ============================================
-      // BUSINESS LOGIC
+      // FILTER & SORT FUNCTIONS
       // ============================================
       function filterMangaByTerm(term) {
+        if (!term) return AppState.manga;
+        const lowerTerm = term.toLowerCase();
+        
         return AppState.manga.filter(m => {
-          if (m.titolo.toLowerCase().includes(term)) return true;
-          if (m.artisti?.nome?.toLowerCase().includes(term)) return true;
+          if (m.titolo?.toLowerCase().includes(lowerTerm)) return true;
+          if (m.artisti?.nome?.toLowerCase().includes(lowerTerm)) return true;
+          if (m.artisti?.toLowerCase?.().includes(lowerTerm)) return true;
+          
           if (m.tags && Array.isArray(m.tags)) {
-            return m.tags.some(tag => 
-              tag?.nome && tag.nome.toLowerCase().includes(term)
-            );
+            return m.tags.some(tag => {
+              const tagStr = typeof tag === 'string' ? tag : tag.nome || tag;
+              return tagStr?.toLowerCase().includes(lowerTerm);
+            });
           }
           return false;
         });
@@ -933,7 +1109,7 @@ console.log('🌐 PROXY_URL:', PROXY_URL);
             sorted.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
             break;
           case 'az':
-            sorted.sort((a, b) => a.titolo.localeCompare(b.titolo));
+            sorted.sort((a, b) => (a.titolo || '').localeCompare(b.titolo || ''));
             break;
           case 'popular':
             sorted.sort((a, b) => {
@@ -943,11 +1119,11 @@ console.log('🌐 PROXY_URL:', PROXY_URL);
             });
             break;
           case 'trending':
-            // In production, use real view counts
+            // Per ora uguale a popular
             sorted.sort((a, b) => {
-              const aViews = Math.floor(Math.random() * 1000);
-              const bViews = Math.floor(Math.random() * 1000);
-              return bViews - aViews;
+              const aTags = a.tags?.length || 0;
+              const bTags = b.tags?.length || 0;
+              return bTags - aTags;
             });
             break;
         }
@@ -996,13 +1172,11 @@ console.log('🌐 PROXY_URL:', PROXY_URL);
         window.scrollTo({ top: 400, behavior: 'smooth' });
       };
 
-      window.trackMangaClick = function(mangaId) {
-        trackMangaClick(mangaId);
-      };
-
       window.connectWallet = connectWallet;
+      window.handleGoogleLogin = handleGoogleLogin;
+      window.toggleUserMenu = toggleUserMenu;
+      window.handleLogout = handleLogout;
 
-      // Back to top
       window.onscroll = function() {
         const btn = document.getElementById('backToTop');
         const scrollTop = document.documentElement.scrollTop;
@@ -1011,9 +1185,7 @@ console.log('🌐 PROXY_URL:', PROXY_URL);
       };
 
       // Initialize
-      loadAllData().then(() => {
-        startRealtimeUpdates();
-      });
+      loadAllData();
     </script>
   </body>
 </html>

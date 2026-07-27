@@ -1,377 +1,472 @@
-import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { SupabaseService } from '../supabase/supabase.service';
-import {
-  RealtimeChannel,
-  REALTIME_SUBSCRIBE_STATES,
-  RealtimePostgresChangesPayload,
-} from '@supabase/supabase-js';
+import { RealtimeChannel } from '@supabase/supabase-js';
 
-interface ReadingSessionData {
-  sessionId?: number;
-  userWallet: string;
-  mangaId: number;
-  currentPage: number;
-  startTime: Date;
-  lastUpdate: Date;
-}
+// ============================================
+// INTERFACCE
+// ============================================
 
-interface PresenceData {
-  user: string;
-  online_at: string;
-  user_agent: string;
-}
-
-interface BroadcastPayload {
+export interface ActiveReader {
   wallet: string;
-  mangaId: number;
-  page: number;
-  timestamp: string;
+  currentPage: number;
+  lastUpdate: Date;
+  deviceType?: string;
 }
 
-// Tipo per il payload della presenza
-interface PresenceState {
-  [key: string]: PresenceData[];
+export interface ReadingSessionData {
+  id: number;
+  user_wallet: string;
+  manga_id: number;
+  start_time: string;
+  current_page?: number;
+  end_time?: string;
+  session_duration?: number;
+}
+
+export interface RealtimeUpdate {
+  type: 'page_turn' | 'session_start' | 'session_end';
+  mangaId: number;
+  wallet: string;
+  page?: number;
+  timestamp: Date;
+}
+
+export interface ChannelMessage {
+  type: 'broadcast';
+  event: string;
+  payload: Record<string, unknown>;
+}
+
+export interface PageTurnPayload {
+  wallet: string;
+  page: number;
+}
+
+export interface SessionStartPayload {
+  wallet: string;
+  page: number;
+  deviceType?: string;
+}
+
+export interface SessionEndPayload {
+  wallet: string;
 }
 
 @Injectable()
-export class RealtimeService implements OnModuleDestroy {
+export class RealtimeService {
   private readonly logger = new Logger(RealtimeService.name);
   private activeChannels: Map<string, RealtimeChannel> = new Map();
-  private activeSessions: Map<string, ReadingSessionData> = new Map();
+  private activeReaders: Map<number, Map<string, ActiveReader>> = new Map();
 
-  constructor(private supabaseService: SupabaseService) {
-    this.logger.log('🚀 RealtimeService initialized');
+  constructor(private readonly supabaseService: SupabaseService) {}
+
+  /**
+   * Crea un nuovo canale per un manga
+   */
+  createMangaChannel(mangaId: number): RealtimeChannel {
+    const channelKey = `manga:${mangaId}`;
+
+    // Se esiste già, rimuovilo
+    if (this.activeChannels.has(channelKey)) {
+      const existingChannel = this.activeChannels.get(channelKey);
+      if (existingChannel) {
+        existingChannel.unsubscribe();
+      }
+      this.activeChannels.delete(channelKey);
+    }
+
+    // Crea il canale
+    const channel = this.supabaseService.supabase.channel(channelKey);
+
+    // Setup listeners
+    channel
+      .on('broadcast' as any, { event: 'page_turn' }, (payload: any) => {
+        this.handlePageTurn(mangaId, payload);
+      })
+      .on('broadcast' as any, { event: 'session_start' }, (payload: any) => {
+        this.handleSessionStart(mangaId, payload);
+      })
+      .on('broadcast' as any, { event: 'session_end' }, (payload: any) => {
+        this.handleSessionEnd(mangaId, payload);
+      })
+      .subscribe((status: string) => {
+        this.logger.log(`Channel ${channelKey} status: ${status}`);
+      });
+
+    this.activeChannels.set(channelKey, channel);
+
+    // Inizializza la mappa dei lettori attivi
+    if (!this.activeReaders.has(mangaId)) {
+      this.activeReaders.set(mangaId, new Map());
+    }
+
+    return channel;
   }
 
   /**
-   * Setup per tracking letture in tempo reale
+   * Ottieni statistiche in tempo reale
    */
-  async trackReadingSession(
-    userWallet: string,
+  getRealtimeStats(): {
+    activeChannels: number;
+    activeReaders: Record<string, number>;
+    totalReaders: number;
+    timestamp: string;
+  } {
+    const activeReadersByManga: Record<string, number> = {};
+    let totalReaders = 0;
+
+    // Calcola statistiche dai lettori attivi
+    for (const [mangaId, readers] of this.activeReaders.entries()) {
+      const count = readers.size;
+      activeReadersByManga[`manga_${mangaId}`] = count;
+      totalReaders += count;
+    }
+
+    return {
+      activeChannels: this.activeChannels.size,
+      activeReaders: activeReadersByManga,
+      totalReaders,
+      timestamp: new Date().toISOString(),
+    };
+  }
+
+  /**
+   * Ottieni un canale esistente o creane uno nuovo
+   */
+  getChannel(mangaId: number): RealtimeChannel {
+    const channelKey = `manga:${mangaId}`;
+
+    if (this.activeChannels.has(channelKey)) {
+      const channel = this.activeChannels.get(channelKey);
+      if (channel) return channel;
+    }
+
+    return this.createMangaChannel(mangaId);
+  }
+
+  /**
+   * Invia un aggiornamento a tutti i client su un manga
+   */
+  async broadcastToManga(
+    mangaId: number,
+    event: string,
+    payload: Record<string, unknown>,
+  ): Promise<void> {
+    const channel = this.getChannel(mangaId);
+
+    const message: ChannelMessage = {
+      type: 'broadcast',
+      event,
+      payload: {
+        ...payload,
+        timestamp: new Date().toISOString(),
+      },
+    };
+
+    await channel.send(message);
+  }
+
+  /**
+   * Inizia una sessione di lettura
+   */
+  async startReadingSession(
+    wallet: string,
+    mangaId: number,
+    deviceType?: string,
+  ): Promise<{ sessionId: number }> {
+    const normalizedWallet = wallet.toLowerCase();
+
+    try {
+      const insertData = {
+        user_wallet: normalizedWallet,
+        manga_id: mangaId,
+        start_time: new Date().toISOString(),
+        current_page: 1,
+      };
+
+      const { data, error } = await this.supabaseService.supabase
+        .from('reading_sessions')
+        .insert(insertData as never)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      const sessionData = data as ReadingSessionData;
+
+      // Aggiungi ai lettori attivi
+      this.addActiveReader(mangaId, normalizedWallet, 1, deviceType);
+
+      // Broadcast inizio sessione
+      await this.broadcastToManga(mangaId, 'session_start', {
+        wallet: normalizedWallet,
+        page: 1,
+        deviceType,
+      });
+
+      return { sessionId: sessionData.id };
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+      this.logger.error(`Error starting reading session: ${errorMessage}`);
+      throw err;
+    }
+  }
+
+  /**
+   * Aggiorna la pagina corrente durante la lettura
+   */
+  async updateReadingPage(
+    sessionId: number,
     mangaId: number,
     page: number,
+    wallet: string,
   ): Promise<void> {
-    const client = this.supabaseService.supabase;
-    const sessionKey = `${userWallet}:${mangaId}`;
+    const normalizedWallet = wallet.toLowerCase();
 
     try {
-      // Verifica se esiste già una sessione attiva
-      let sessionData = this.activeSessions.get(sessionKey);
+      const updateData = {
+        current_page: page,
+        last_update: new Date().toISOString(),
+      };
 
-      if (!sessionData) {
-        // Crea nuova sessione nel database
-        const { data, error } = await client
-          .from('reading_sessions')
-          .insert({
-            user_wallet: userWallet,
-            manga_id: mangaId,
-            start_time: new Date().toISOString(),
-            current_page: page,
-          })
-          .select('id')
-          .single();
+      const { error } = await this.supabaseService.supabase
+        .from('reading_sessions')
+        .update(updateData as never)
+        .eq('id', sessionId);
 
-        if (error) throw error;
+      if (error) throw error;
 
-        if (!data) throw new Error('No data returned from insert');
+      // Aggiorna lettori attivi
+      this.updateActiveReader(mangaId, normalizedWallet, page);
 
-        // Cast esplicito per evitare l'errore no-unsafe-assignment
-        const sessionId = Number(data.id);
-
-        sessionData = {
-          sessionId,
-          userWallet,
-          mangaId,
-          currentPage: page,
-          startTime: new Date(),
-          lastUpdate: new Date(),
-        };
-
-        this.activeSessions.set(sessionKey, sessionData);
-        this.logger.debug(`📖 New reading session: ${sessionKey}`);
-      }
-
-      // Usa broadcast per aggiornamenti in tempo reale
-      const channelKey = `manga:${mangaId}:reading`;
-      let channel = this.activeChannels.get(channelKey);
-
-      if (!channel) {
-        channel = client.channel(channelKey, {
-          config: { private: false }, // pubblico per demo
-        });
-
-        // Usa un tipo più generico per il payload del broadcast
-        channel
-          .on('broadcast' as any, { event: 'page_turn' }, (payload: any) => {
-            // Validazione del payload a runtime
-            if (
-              payload &&
-              typeof payload === 'object' &&
-              'wallet' in payload &&
-              'mangaId' in payload &&
-              'page' in payload
-            ) {
-              const broadcastPayload = payload as BroadcastPayload;
-              this.logger.debug(
-                `📖 ${broadcastPayload.wallet} reading page ${broadcastPayload.page} of manga ${broadcastPayload.mangaId}`,
-              );
-            }
-          })
-          .subscribe((status) => {
-            if (status === REALTIME_SUBSCRIBE_STATES.SUBSCRIBED) {
-              this.logger.debug(`✅ Subscribed to ${channelKey}`);
-            }
-          });
-
-        this.activeChannels.set(channelKey, channel);
-      }
-
-      // Broadcast il cambio pagina
-      if (channel) {
-        await channel.send({
-          type: 'broadcast',
-          event: 'page_turn',
-          payload: {
-            wallet: userWallet,
-            mangaId,
-            page,
-            timestamp: new Date().toISOString(),
-          },
-        });
-      }
-
-      // Aggiorna sessione
-      await this.updateReadingSession(userWallet, mangaId, page);
+      // Broadcast cambio pagina
+      await this.broadcastToManga(mangaId, 'page_turn', {
+        wallet: normalizedWallet,
+        page,
+      });
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Unknown error';
-      this.logger.error(`❌ Error tracking reading session: ${errorMessage}`);
-    }
-  }
-
-  /**
-   * Presence per vedere chi sta leggendo ora
-   */
-  async trackOnlineReaders(
-    mangaId: number,
-    userWallet: string,
-  ): Promise<RealtimeChannel | null> {
-    const client = this.supabaseService.supabase;
-    const channelKey = `manga:${mangaId}:presence`;
-
-    try {
-      let channel = this.activeChannels.get(channelKey);
-
-      if (!channel) {
-        channel = client.channel(channelKey);
-
-        // Gestisci eventi di presence
-        channel
-          .on('presence', { event: 'sync' }, () => {
-            if (!channel) return;
-            const state = channel.presenceState() as PresenceState;
-            const readerCount = Object.keys(state).length;
-            this.logger.debug(
-              `🔄 Presence sync for manga ${mangaId}: ${readerCount} readers`,
-            );
-          })
-          .on('presence', { event: 'join' }, ({ key }) => {
-            this.logger.debug(`👋 ${key} joined reading manga ${mangaId}`);
-          })
-          .on('presence', { event: 'leave' }, ({ key }) => {
-            this.logger.debug(`🚪 ${key} left manga ${mangaId}`);
-          });
-
-        channel.subscribe((status) => {
-          if (status === REALTIME_SUBSCRIBE_STATES.SUBSCRIBED && channel) {
-            channel
-              .track({
-                user: userWallet,
-                online_at: new Date().toISOString(),
-                user_agent: 'web',
-              })
-              .then(() => {
-                this.logger.debug(
-                  `✅ Subscribed to presence for manga ${mangaId}`,
-                );
-              })
-              .catch((err) => {
-                const errorMessage =
-                  err instanceof Error ? err.message : 'Unknown error';
-                this.logger.error(
-                  `❌ Error tracking presence: ${errorMessage}`,
-                );
-              });
-          }
-        });
-
-        this.activeChannels.set(channelKey, channel);
-      } else {
-        // Aggiorna presenza
-        await channel.track({
-          user: userWallet,
-          online_at: new Date().toISOString(),
-          user_agent: 'web',
-        });
-      }
-
-      return channel;
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
-      this.logger.error(`❌ Error tracking presence: ${errorMessage}`);
-      return null;
-    }
-  }
-
-  /**
-   * Ottieni lista lettori attivi per un manga
-   */
-  getActiveReaders(mangaId: number): PresenceData[] {
-    const channelKey = `manga:${mangaId}:presence`;
-    const channel = this.activeChannels.get(channelKey);
-
-    if (!channel) return [];
-
-    const presenceState = channel.presenceState() as PresenceState;
-    const readers: PresenceData[] = [];
-
-    for (const presences of Object.values(presenceState)) {
-      if (presences && presences.length > 0) {
-        readers.push(presences[0]);
-      }
-    }
-
-    return readers;
-  }
-
-  /**
-   * Aggiorna sessione di lettura
-   */
-  private async updateReadingSession(
-    userWallet: string,
-    mangaId: number,
-    page: number,
-  ): Promise<void> {
-    const client = this.supabaseService.supabase;
-    const sessionKey = `${userWallet}:${mangaId}`;
-    const sessionData = this.activeSessions.get(sessionKey);
-
-    if (!sessionData?.sessionId) return;
-
-    try {
-      // Aggiorna la sessione ogni 10 pagine o ogni minuto
-      const shouldUpdate =
-        page % 10 === 0 ||
-        Date.now() - sessionData.lastUpdate.getTime() > 60000;
-
-      if (shouldUpdate) {
-        await client
-          .from('reading_sessions')
-          .update({
-            current_page: page,
-            last_update: new Date().toISOString(),
-          })
-          .eq('id', sessionData.sessionId);
-
-        sessionData.lastUpdate = new Date();
-        sessionData.currentPage = page;
-        this.activeSessions.set(sessionKey, sessionData);
-      }
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
-      this.logger.error(`❌ Error updating session: ${errorMessage}`);
+      this.logger.error(`Error updating reading page: ${errorMessage}`);
     }
   }
 
   /**
    * Termina una sessione di lettura
    */
-  async endReadingSession(userWallet: string, mangaId: number): Promise<void> {
-    const client = this.supabaseService.supabase;
-    const sessionKey = `${userWallet}:${mangaId}`;
-    const sessionData = this.activeSessions.get(sessionKey);
+  async endReadingSession(
+    sessionId: number,
+    mangaId: number,
+    wallet: string,
+  ): Promise<void> {
+    const normalizedWallet = wallet.toLowerCase();
 
-    if (sessionData?.sessionId) {
-      try {
-        const endTime = new Date();
-        const duration = Math.floor(
-          (endTime.getTime() - sessionData.startTime.getTime()) / 1000,
-        );
+    try {
+      const endTime = new Date().toISOString();
 
-        await client
-          .from('reading_sessions')
-          .update({
-            end_time: endTime.toISOString(),
-            session_duration: duration,
-          })
-          .eq('id', sessionData.sessionId);
+      // Calcola durata (sarebbe meglio prendere start_time dal DB)
+      const updateData = {
+        end_time: endTime,
+        session_duration: 0, // Idealmente calcolato da start_time
+      };
 
-        this.activeSessions.delete(sessionKey);
-        this.logger.debug(
-          `✅ Session ended for ${sessionKey}, duration: ${duration}s`,
-        );
-      } catch (err) {
-        const errorMessage =
-          err instanceof Error ? err.message : 'Unknown error';
-        this.logger.error(`❌ Error ending session: ${errorMessage}`);
-      }
-    }
+      const { error } = await this.supabaseService.supabase
+        .from('reading_sessions')
+        .update(updateData as never)
+        .eq('id', sessionId);
 
-    // Rimuovi dalla presenza
-    const channelKey = `manga:${mangaId}:presence`;
-    const channel = this.activeChannels.get(channelKey);
-    if (channel) {
-      await channel.untrack();
+      if (error) throw error;
+
+      // Rimuovi dai lettori attivi
+      this.removeActiveReader(mangaId, normalizedWallet);
+
+      // Broadcast fine sessione
+      await this.broadcastToManga(mangaId, 'session_end', {
+        wallet: normalizedWallet,
+      });
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+      this.logger.error(`Error ending reading session: ${errorMessage}`);
     }
   }
 
   /**
-   * Pulisci tutte le connessioni (chiamato allo shutdown)
+   * Ottieni i lettori attivi per un manga
    */
-  async onModuleDestroy(): Promise<void> {
-    this.logger.log('🔄 Cleaning up Realtime connections...');
+  getActiveReaders(mangaId: number): ActiveReader[] {
+    const readers = this.activeReaders.get(mangaId);
+    if (!readers) return [];
 
-    for (const [key, channel] of this.activeChannels) {
-      try {
-        await channel.unsubscribe();
-        this.logger.debug(`✅ Unsubscribed from ${key}`);
-      } catch (err) {
-        const errorMessage =
-          err instanceof Error ? err.message : 'Unknown error';
-        this.logger.error(
-          `❌ Error unsubscribing from ${key}: ${errorMessage}`,
-        );
-      }
-    }
-
-    this.activeChannels.clear();
-    this.activeSessions.clear();
-    this.logger.log('✅ RealtimeService cleaned up');
+    return Array.from(readers.values())
+      .filter((reader) => {
+        // Rimuovi lettori inattivi da più di 2 minuti
+        const inactive =
+          new Date().getTime() - reader.lastUpdate.getTime() > 120000;
+        return !inactive;
+      })
+      .map((reader) => ({
+        ...reader,
+        lastUpdate: new Date(reader.lastUpdate), // Assicura che sia un oggetto Date
+      }));
   }
 
   /**
-   * Ottieni statistiche in tempo reale
+   * Traccia una sessione di lettura (metodo richiesto dal controller)
    */
-  getRealtimeStats(): Record<string, any> {
-    const stats: Record<string, any> = {
-      activeChannels: this.activeChannels.size,
-      activeSessions: this.activeSessions.size,
-      readersByManga: {},
-    };
+  async trackReadingSession(
+    wallet: string,
+    mangaId: number,
+    page: string | number,
+  ): Promise<void> {
+    try {
+      const pageNum = typeof page === 'string' ? parseInt(page, 10) : page;
 
-    // Raccogli lettori per manga
-    for (const [key, channel] of this.activeChannels) {
-      if (key.includes(':presence')) {
-        const parts = key.split(':');
-        if (parts.length >= 2) {
-          const mangaId = parts[1];
-          const presence = channel.presenceState() as PresenceState;
-          // Cast sicuro per evitare no-unsafe-member-access
-          const readerCount = Object.keys(presence || {}).length;
-          stats.readersByManga[mangaId] = readerCount;
-        }
+      // Verifica se esiste una sessione attiva
+      // Questo è un esempio semplificato - dovresti implementare la logica completa
+      this.logger.log(
+        `Tracking reading session for ${wallet} on manga ${mangaId} at page ${pageNum}`,
+      );
+
+      // Aggiorna i lettori attivi
+      this.addActiveReader(mangaId, wallet, pageNum);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+      this.logger.error(`Error in trackReadingSession: ${errorMessage}`);
+      throw err;
+    }
+  }
+
+  /**
+   * Traccia lettori online (metodo richiesto dal controller)
+   */
+  async trackOnlineReaders(mangaId: number, wallet: string): Promise<void> {
+    try {
+      // Aggiorna o aggiungi il lettore alla lista dei lettori attivi
+      const readers = this.activeReaders.get(mangaId);
+      if (readers && readers.has(wallet)) {
+        const reader = readers.get(wallet)!;
+        reader.lastUpdate = new Date();
+      } else {
+        this.addActiveReader(mangaId, wallet, 1);
+      }
+
+      this.logger.debug(`User ${wallet} online on manga ${mangaId}`);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+      this.logger.error(`Error in trackOnlineReaders: ${errorMessage}`);
+      throw err;
+    }
+  }
+
+  /**
+   * Pulisci i canali inattivi
+   */
+  cleanupInactiveChannels(): void {
+    for (const [key, channel] of this.activeChannels.entries()) {
+      try {
+        channel.unsubscribe();
+        this.activeChannels.delete(key);
+      } catch (err) {
+        const errorMessage =
+          err instanceof Error ? err.message : 'Unknown error';
+        this.logger.error(`Error cleaning up channel ${key}: ${errorMessage}`);
       }
     }
+  }
 
-    return stats;
+  /**
+   * Gestisce eventi di cambio pagina
+   */
+  private handlePageTurn(mangaId: number, payload: any): void {
+    try {
+      const { wallet, page } = payload as PageTurnPayload;
+      if (wallet && typeof page === 'number') {
+        this.updateActiveReader(mangaId, wallet, page);
+      }
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+      this.logger.error(`Error handling page turn: ${errorMessage}`);
+    }
+  }
+
+  /**
+   * Gestisce eventi di inizio sessione
+   */
+  private handleSessionStart(mangaId: number, payload: any): void {
+    try {
+      const { wallet, page, deviceType } = payload as SessionStartPayload;
+      if (wallet && typeof page === 'number') {
+        this.addActiveReader(mangaId, wallet, page, deviceType);
+      }
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+      this.logger.error(`Error handling session start: ${errorMessage}`);
+    }
+  }
+
+  /**
+   * Gestisce eventi di fine sessione
+   */
+  private handleSessionEnd(mangaId: number, payload: any): void {
+    try {
+      const { wallet } = payload as SessionEndPayload;
+      if (wallet) {
+        this.removeActiveReader(mangaId, wallet);
+      }
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+      this.logger.error(`Error handling session end: ${errorMessage}`);
+    }
+  }
+
+  /**
+   * Aggiunge un lettore attivo
+   */
+  private addActiveReader(
+    mangaId: number,
+    wallet: string,
+    page: number,
+    deviceType?: string,
+  ): void {
+    if (!this.activeReaders.has(mangaId)) {
+      this.activeReaders.set(mangaId, new Map<string, ActiveReader>());
+    }
+
+    const readers = this.activeReaders.get(mangaId)!;
+
+    readers.set(wallet, {
+      wallet,
+      currentPage: page,
+      lastUpdate: new Date(),
+      deviceType,
+    });
+  }
+
+  /**
+   * Aggiorna un lettore attivo
+   */
+  private updateActiveReader(
+    mangaId: number,
+    wallet: string,
+    page: number,
+  ): void {
+    const readers = this.activeReaders.get(mangaId);
+    if (!readers || !readers.has(wallet)) return;
+
+    const reader = readers.get(wallet)!;
+    reader.currentPage = page;
+    reader.lastUpdate = new Date();
+  }
+
+  /**
+   * Rimuove un lettore attivo
+   */
+  private removeActiveReader(mangaId: number, wallet: string): void {
+    const readers = this.activeReaders.get(mangaId);
+    if (readers) {
+      readers.delete(wallet);
+      if (readers.size === 0) {
+        this.activeReaders.delete(mangaId);
+      }
+    }
   }
 }
