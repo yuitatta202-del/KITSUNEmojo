@@ -14,7 +14,6 @@ import {
   UseInterceptors,
   ClassSerializerInterceptor,
   Version,
-  Header,
   UseGuards,
   DefaultValuePipe,
 } from '@nestjs/common';
@@ -24,8 +23,6 @@ import {
   MangaWithRelations,
   MangaFilterOptions as ServiceMangaFilterOptions,
   UpdateResult,
-  PaginatedResult,
-  HealthCheckResponse,
   Artista,
   Tag,
   Categoria,
@@ -109,16 +106,16 @@ class MangaListResponse {
 }
 
 class MangaStatsResponse {
-  id: number;
-  titolo: string;
-  total_views: number;
-  total_votes: number;
-  up_votes: number;
-  down_votes: number;
-  total_bookmarks: number;
-  total_comments: number;
-  total_reading_sessions: number;
-  avg_completion_rate: number;
+  id: number = 0;
+  titolo: string = '';
+  total_views: number = 0;
+  total_votes: number = 0;
+  up_votes: number = 0;
+  down_votes: number = 0;
+  total_bookmarks: number = 0;
+  total_comments: number = 0;
+  total_reading_sessions: number = 0;
+  avg_completion_rate: number = 0;
   daily_stats?: {
     date: string;
     views: number;
@@ -149,18 +146,9 @@ class TagResponse {
   usageCount?: number;
 }
 
-class ErrorResponse {
-  statusCode: number;
-  message: string;
-  error?: string;
-  timestamp: string;
-  path?: string;
-  requestId?: string;
-}
-
 class SuccessResponse {
-  success: boolean;
-  message: string;
+  success: boolean = true;
+  message: string = '';
   id?: number;
   requestId?: string;
   timestamp?: string;

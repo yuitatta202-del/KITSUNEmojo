@@ -55,7 +55,7 @@ export enum ImportSource {
 // ============================================
 
 export class BulkImportBody {
-  urls: string[];
+  urls: string[] = [];
   source?: ImportSource;
   priority?: 'high' | 'normal' | 'low';
 }
@@ -74,68 +74,67 @@ export class UpdateMangaBody implements Partial<MangaUpdate> {
 
 // Response Shapes
 export class ArtistResponse {
-  id: number;
-  nome: string;
-  counter: number;
+  id: number = 0;
+  nome: string = '';
+  counter: number = 0;
   mangaCount?: number;
 }
-
 export class TagResponse {
-  id: number;
-  nome: string;
-  counter: number;
+  id: number = 0;
+  nome: string = '';
+  counter: number = 0;
   usageCount?: number;
 }
 
 export class CategoryResponse {
-  id: number;
-  nome: string;
-  counter: number;
+  id: number = 0;
+  nome: string = '';
+  counter: number = 0;
   mangaCount?: number;
 }
 
 export class SystemStatsResponse {
-  total_manga: number;
-  total_artists: number;
-  total_tags: number;
-  total_categories: number;
-  total_users: number;
-  recent_manga: number;
-  active_admins: number;
-  system_uptime: number;
-  timestamp: string;
+  total_manga: number = 0;
+  total_artists: number = 0;
+  total_tags: number = 0;
+  total_categories: number = 0;
+  total_users: number = 0;
+  recent_manga: number = 0;
+  active_admins: number = 0;
+  system_uptime: number = 0;
+  timestamp: string = '';
 }
 
 export class PopularTagResponse {
-  nome: string;
-  count: number;
+  nome: string = '';
+  count: number = 0;
   percentage?: number;
 }
 
 export class QuickStatsResponse {
-  total_manga: number;
-  total_artists: number;
-  total_tags: number;
-  total_categories: number;
-  total_views_today: number;
-  active_users: number;
+  total_manga: number = 0;
+  total_artists: number = 0;
+  total_tags: number = 0;
+  total_categories: number = 0;
+  total_views_today: number = 0;
+  active_users: number = 0;
 }
 
 export class DailyStatResponse {
-  id: number;
-  date: string;
-  total_visits: number | null;
-  total_clicks: number | null;
-  unique_wallets: number | null;
-  conversion_rate?: number | null;
+  id: number = 0;
+  date: string = '';
+  total_visits: number | null = null;
+  total_clicks: number | null = null;
+  unique_wallets: number | null = null;
+  conversion_rate?: number | null = null;
 }
 
 export class MangaRepairItem {
-  id: number;
-  immagine: string | null;
-  titolo: string;
+  id: number = 0;
+  immagine: string | null = null;
+  titolo: string = '';
   current_server?: string;
-  status: RepairStatus;
+  status: RepairStatus = RepairStatus.UNKNOWN;
 }
 
 export class PopularTagData {
@@ -146,32 +145,40 @@ export class PopularTagData {
 
 // Stats & Health
 export class HealthCheckResponse {
-  status: 'ok' | 'error' | 'degraded';
-  timestamp: string;
-  version: string;
+  status: 'ok' | 'error' | 'degraded' = 'ok';
+  timestamp: string = '';
+  version: string = '';
   services: {
     database: 'up' | 'down';
     storage: 'up' | 'down';
     import: 'up' | 'down';
+  } = {
+    database: 'up',
+    storage: 'up',
+    import: 'up',
   };
   metrics: {
     responseTime: number;
     activeRequests: number;
     uptime: number;
+  } = {
+    responseTime: 0,
+    activeRequests: 0,
+    uptime: 0,
   };
 }
 
 export class DatabaseStatsResponse {
-  mangaCount: number;
-  artistCount: number;
-  tagCount: number;
-  categoryCount: number;
-  userCount: number;
-  totalVotes: number;
-  totalBookmarks: number;
-  totalComments: number;
+  mangaCount: number = 0;
+  artistCount: number = 0;
+  tagCount: number = 0;
+  categoryCount: number = 0;
+  userCount: number = 0;
+  totalVotes: number = 0;
+  totalBookmarks: number = 0;
+  totalComments: number = 0;
   databaseSize?: string;
-  lastUpdated: string;
+  lastUpdated: string = '';
 }
 
 // ============================================
@@ -931,7 +938,7 @@ export class AdminController {
   async importManga(
     @Headers() headers: HeadersWithAuth,
     @Body('url') url: string,
-    @Body('source') source?: ImportSource,
+    @Body('source') _source?: ImportSource,
   ): Promise<ImportResult & { requestId: string; duration: number }> {
     const startTime = Date.now();
     const { address, requestId } = this.verifyAdmin(headers);
@@ -1615,13 +1622,9 @@ export class AdminController {
         .checkHealth()
         .catch(() => false);
 
-      // ✅ FIX: Rimosso healthCheck da importService
-      const importHealthy = true; // Temporaneamente true
-
       const responseTime = Date.now() - start;
 
-      const status: 'ok' | 'error' | 'degraded' =
-        dbHealthy && importHealthy ? 'ok' : dbHealthy ? 'degraded' : 'error';
+      const status: 'ok' | 'error' | 'degraded' = dbHealthy ? 'ok' : 'error';
 
       return {
         status,
@@ -1630,7 +1633,7 @@ export class AdminController {
         services: {
           database: dbHealthy ? 'up' : 'down',
           storage: 'up',
-          import: importHealthy ? 'up' : 'down',
+          import: 'up',
         },
         metrics: {
           responseTime,
@@ -1639,7 +1642,9 @@ export class AdminController {
         },
       };
     } catch (error) {
-      this.logger.error(`[HealthCheck] Errore critico: ${error.message}`);
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
+      this.logger.error(`[HealthCheck] Errore critico: ${errorMessage}`);
 
       return {
         status: 'error',

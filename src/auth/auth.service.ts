@@ -219,9 +219,11 @@ function LogPerformance() {
           `[${requestId}] ${propertyKey} executed in ${duration.toFixed(2)}ms`,
         );
 
-        // Emetti metrica (opzionale)
-        if (this.eventEmitter) {
-          this.eventEmitter.emit('metrics.performance', {
+        // ✅ Cast a any per accedere a eventEmitter
+        // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
+        const instance = this as any;
+        if (instance?.eventEmitter) {
+          instance.eventEmitter.emit('metrics.performance', {
             method: propertyKey,
             duration,
             requestId,
@@ -860,7 +862,7 @@ export class AuthService {
         });
       }
 
-      if (user.role !== payload.role) {
+      if (user.role !== (payload.role as string)) {
         this.logger.warn(
           `Role mismatch for user ${user.id}: ${payload.role} vs ${user.role}`,
         );

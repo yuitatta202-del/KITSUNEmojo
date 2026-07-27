@@ -11,8 +11,6 @@ import {
   HttpCode,
   HttpStatus,
   Headers,
-  Ip,
-  Version,
   Header,
   All,
   Query,
@@ -31,19 +29,18 @@ import type { Request, Response } from 'express';
 import { ThrottlerGuard } from '@nestjs/throttler';
 import { Public } from './decorators/public.decorator';
 import { UserAgent } from './decorators/user-agent.decorator';
-import { RealIp } from './decorators/real-ip.decorator';
 
 // ============================================
-// DTOs (Data Transfer Objects)
+// DTOs (Data Transfer Objects)s
 // ============================================
 
 /**
  * DTO per la risposta di autenticazione
  */
 class AuthResponseDto {
-  access_token: string;
-  token_type: 'Bearer';
-  expires_in: number;
+  access_token: string = '';
+  token_type: 'Bearer' = 'Bearer';
+  expires_in: number = 0;
   user: {
     id: string;
     email: string;
@@ -52,6 +49,13 @@ class AuthResponseDto {
     role: UserRole;
     wallet_address?: string;
     is_active: boolean;
+  } = {
+    id: '',
+    email: '',
+    name: '',
+    avatar_url: '',
+    role: UserRole.USER,
+    is_active: true,
   };
 }
 
@@ -59,7 +63,7 @@ class AuthResponseDto {
  * DTO per la risposta di stato autenticazione
  */
 class AuthStatusResponseDto {
-  authenticated: boolean;
+  authenticated: boolean = false;
   user?: {
     id: string;
     email: string;
@@ -73,22 +77,22 @@ class AuthStatusResponseDto {
  * DTO per la risposta di configurazione
  */
 class ConfigResponseDto {
-  googleConfigured: boolean;
-  jwtConfigured: boolean;
-  frontendUrl: string;
-  backendUrl: string;
-  environment: string;
-  version: string;
+  googleConfigured: boolean = false;
+  jwtConfigured: boolean = false;
+  frontendUrl: string = '';
+  backendUrl: string = '';
+  environment: string = '';
+  version: string = '';
 }
 
 /**
  * DTO per la risposta di errore
  */
 class ErrorResponseDto {
-  statusCode: number;
-  message: string;
+  statusCode: number = 500;
+  message: string = '';
   error?: string;
-  timestamp: string;
+  timestamp: string = '';
   path?: string;
 }
 
@@ -108,14 +112,6 @@ interface AuthenticatedUser {
 
 interface AuthenticatedRequest extends Request {
   user: AuthenticatedUser;
-}
-
-interface TestUser {
-  id: string;
-  email: string;
-  name: string;
-  avatar_url: string;
-  role: UserRole;
 }
 
 // ============================================
@@ -170,8 +166,6 @@ export class AuthController {
   async googleAuthRedirect(
     @Req() req: Request,
     @Res() res: Response,
-    @UserAgent() userAgent?: string,
-    @RealIp() ip?: string,
   ): Promise<void> {
     const requestId = this.generateRequestId();
     const startTime = Date.now();
@@ -267,7 +261,6 @@ export class AuthController {
   getCurrentUser(
     @Req() req: AuthenticatedRequest,
     @UserAgent() userAgent?: string,
-    @RealIp() ip?: string,
   ): AuthenticatedUser {
     try {
       this.logger.debug(
@@ -313,8 +306,6 @@ export class AuthController {
   async logout(
     @Req() req: AuthenticatedRequest,
     @Res() res: Response,
-    @UserAgent() userAgent?: string,
-    @RealIp() ip?: string,
   ): Promise<void> {
     const requestId = this.generateRequestId();
 
