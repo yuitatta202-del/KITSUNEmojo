@@ -609,8 +609,8 @@ export class AuthService {
     }
 
     if (error && typeof error === 'object') {
-      const err = error as any;
-      if (err.message) {
+      const err = error as Record<string, unknown>;
+      if (typeof err.message === 'string') {
         return new Error(err.message);
       }
     }
@@ -781,7 +781,7 @@ export class AuthService {
         wallet_address: (user as any).wallet_address,
       };
 
-      const signOptions: any = {
+      const signOptions: Record<string, unknown> = {
         secret: this.jwtSecret,
         expiresIn: this.jwtExpiresIn,
         issuer: this.configService.get('BACKEND_URL'),
@@ -792,7 +792,7 @@ export class AuthService {
         signOptions.subject = fingerprint;
       }
 
-      const token = this.jwtService.sign(payload, signOptions);
+      const token = this.jwtService.sign(payload, signOptions as any);
       const expiresIn = this.parseDuration(this.jwtExpiresIn);
       const safeUser = this.sanitizeUser(user);
 
@@ -912,10 +912,9 @@ export class AuthService {
         });
       }
 
-      // Rimuovi prefisso Bearer se presente
       const cleanToken = token.replace(/^Bearer\s+/i, '');
 
-      const verifyOptions: any = {
+      const verifyOptions: Record<string, unknown> = {
         secret: this.jwtSecret,
         issuer: this.configService.get('BACKEND_URL'),
         audience: this.configService.get('FRONTEND_URL'),
@@ -924,10 +923,9 @@ export class AuthService {
 
       const payload = this.jwtService.verify<JwtPayload>(
         cleanToken,
-        verifyOptions,
+        verifyOptions as any,
       );
 
-      // Verifica fingerprint se richiesto
       if (options?.fingerprint && payload.sub !== options.fingerprint) {
         throw new UnauthorizedException({
           code: 'FINGERPRINT_MISMATCH',
@@ -1504,7 +1502,6 @@ export class AuthService {
     const cacheKey = 'user_statistics';
 
     try {
-      // Try cache
       if (!options?.skipCache) {
         const cached = await this.cacheManager.get<UserStatistics>(cacheKey);
         if (cached) {
@@ -1513,15 +1510,6 @@ export class AuthService {
       }
 
       const stats = await this.supabaseService.getUserStats();
-
-      // Calcola statistiche aggiuntive
-      const now = new Date();
-      const today = now.toISOString().split('T')[0];
-      const weekAgo = new Date(now.setDate(now.getDate() - 7)).toISOString();
-      const monthAgo = new Date(now.setMonth(now.getMonth() - 1)).toISOString();
-
-      // Qui potresti aggiungere query per statistiche più dettagliate
-      // Per ora usiamo dati di esempio o placeholder
 
       const result: UserStatistics = {
         total: stats.total_users,
@@ -1549,7 +1537,6 @@ export class AuthService {
         },
       };
 
-      // Cache per 1 ora
       await this.cacheManager.set(cacheKey, result, this.cacheTTL.stats);
 
       return result;
@@ -1583,16 +1570,14 @@ export class AuthService {
   @LogPerformance()
   refreshToken(oldToken: string, fingerprint?: string): AuthResponse {
     try {
-      // Verifica il vecchio token
       const payload = this.verifyToken(oldToken, {
-        ignoreExpiration: true, // Ignora scadenza per refresh
+        ignoreExpiration: true,
         fingerprint,
       });
 
-      // Rimuovi campi temporali
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { iat, exp, ...cleanPayload } = payload;
 
-      // Verifica che il token non sia troppo vecchio (max 30 giorni)
       if (exp && Date.now() / 1000 - exp > 30 * 24 * 60 * 60) {
         throw new UnauthorizedException({
           code: 'REFRESH_EXPIRED',
@@ -1600,7 +1585,6 @@ export class AuthService {
         });
       }
 
-      // Crea utente virtuale per generare nuovo token
       const virtualUser = {
         id: cleanPayload.sub,
         email: cleanPayload.email,
